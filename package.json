@@ -1,0 +1,19 @@
+{
+    "name": "haxball_headless_v9",
+    "version": "9.0.0",
+    "description": "Haxball headless bot",
+    "main": "dist/main.js",
+    "scripts": {
+        "build": "tsc",
+        "bundle": "esbuild src/main.ts --bundle --platform=browser --format=iife --target=es2020 --outfile=dist/bundle.js",
+        "bundle:min": "esbuild src/main.ts --bundle --minify --platform=browser --format=iife --target=es2020 --outfile=dist/bundle.min.js",
+        "bundle:all": "npm run bundle && npm run bundle:min",
+        "build:all": "npm run typecheck && npm run build && npm run bundle",
+        "typecheck": "tsc --noEmit",
+        "start": "node dist/main.js"
+    },
+    "devDependencies": {
+        "esbuild": "^0.28.1",
+        "typescript": "^5.5.0"
+    }
+}
