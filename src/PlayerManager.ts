@@ -1,22 +1,63 @@
+import * as util from "./util";
 import { Player } from "./types";
 
 class PlayerManager {
-    // Main lookup table
     public all = new Map<number, Player>();
-
-    // High-performance index subsets (Sets preserve instant add/delete)
+    public spectators = new Set<Player>();
     public redTeam = new Set<Player>();
     public blueTeam = new Set<Player>();
     public admins = new Set<Player>();
     public superAdmins = new Set<Player>();
     public developers = new Set<Player>();
 
+    private setFlag(player: Player, flagKey: "isAdmin" | "isSuperAdmin" | "isDeveloper", targetSet: Set<Player>, value: boolean) {
+        if (!player) return;
+
+        player[flagKey] = value;
+        if (value) targetSet.add(player);
+        else targetSet.delete(player);
+    }
+
+    public setAdmin(player: Player, isAdmin: boolean) {
+        this.setFlag(player, "isAdmin", this.admins, isAdmin);
+        if (!isAdmin) {
+            if (player.isSuperAdmin) this.setFlag(player, "isSuperAdmin", this.superAdmins, false);
+            if (player.isDeveloper) this.setFlag(player, "isDeveloper", this.developers, false);
+        }
+        util.messageAdmins(`${player.name} is ${isAdmin ? "now" : "no longer"} admin`);
+    }
+    public setSuperAdmin(player: Player, isSuperAdmin: boolean) {
+        if (isSuperAdmin && !this.admins.has(player)) {
+            this.setFlag(player, "isAdmin", this.admins, true);
+        }
+        else if (!isSuperAdmin && player.isDeveloper) {
+            this.setFlag(player, "isDeveloper", this.developers, false);
+        }
+        this.setFlag(player, "isSuperAdmin", this.superAdmins, isSuperAdmin);
+        util.messageSuperAdmins(`${player.name} is ${isSuperAdmin ? "now" : "no longer"} a super admin`);
+    }
+    public setDeveloper(player: Player, isDeveloper: boolean) {
+        if (isDeveloper && !this.admins.has(player)) {
+            this.setFlag(player, "isAdmin", this.admins, true);
+        }
+        this.setFlag(player, "isDeveloper", this.developers, isDeveloper);
+        util.messageDevelopers(`${player.name} is ${isDeveloper ? "now" : "no longer"} a developer`);
+    }
+
+    private addToTeamSet(player: Player, team: number) {
+        if (team === 0) this.spectators.add(player);
+        if (team === 1) this.redTeam.add(player);
+        if (team === 2) this.blueTeam.add(player);
+    }
+    private removeFromTeamSet(player: Player, team: number) {
+        if (team === 0) this.spectators.delete(player);
+        if (team === 1) this.redTeam.delete(player);
+        if (team === 2) this.blueTeam.delete(player);
+    }
+
     public addPlayer(player: Player) {
         this.all.set(player.id, player);
-
-        // Categorize immediately on join
-        if (player.team === 1) this.redTeam.add(player);
-        if (player.team === 2) this.blueTeam.add(player);
+        this.addToTeamSet(player, player.team);
         if (player.isAdmin) this.admins.add(player);
         if (player.isSuperAdmin) this.superAdmins.add(player);
         if (player.isDeveloper) this.developers.add(player);
@@ -25,66 +66,40 @@ class PlayerManager {
     public removePlayer(playerId: number) {
         const player = this.all.get(playerId);
         if (!player) return;
-
-        // Clean up all subsets instantly (O(1))
-        this.redTeam.delete(player);
-        this.blueTeam.delete(player);
+        this.removeFromTeamSet(player, player.team);
         this.admins.delete(player);
         this.superAdmins.delete(player);
         this.developers.delete(player);
-
         this.all.delete(playerId);
     }
 
     public handleTeamChange(playerId: number, newTeam: number) {
         const player = this.all.get(playerId);
         if (!player) return;
-
-        // Remove from old team tracking
-        if (player.team === 1) this.redTeam.delete(player);
-        if (player.team === 2) this.blueTeam.delete(player);
-
-        // Update property and add to new tracking
+        this.removeFromTeamSet(player, player.team);
         player.team = newTeam;
-        if (newTeam === 1) this.redTeam.add(player);
-        if (newTeam === 2) this.blueTeam.add(player);
+        this.addToTeamSet(player, newTeam);
     }
+    getByQuery(query: string): Player | null {
+        const lower = query.toLocaleLowerCase();
 
-    public setAdmin(playerId: number, isAdmin: boolean) {
-        const player = this.all.get(playerId);
-        if (!player) return;
-
-        player.isAdmin = isAdmin;
-        if (isAdmin) {
-            this.admins.add(player);
-        } else {
-            this.admins.delete(player);
+        // 1) exact ID match (fastest)
+        if (query.startsWith("#")) {
+            const id = parseInt(query.slice(1));
+            return this.all.get(id) || null;
         }
-    }
 
-    public setSuperAdmin(playerId: number, isSuperAdmin: boolean) {
-        const player = this.all.get(playerId);
-        if (!player) return;
-
-        player.isSuperAdmin = isSuperAdmin;
-        if (isSuperAdmin) {
-            this.superAdmins.add(player);
-        } else {
-            this.superAdmins.delete(player);
+        // 2) exact name match
+        for (const p of this.all.values()) {
+            if (p.name.toLocaleLowerCase() === lower) return p;
         }
-    }
 
-    public setDeveloper(playerId: number, isDeveloper: boolean) {
-        const player = this.all.get(playerId);
-        if (!player) return;
-
-        player.isDeveloper = isDeveloper;
-        if (isDeveloper) {
-            this.developers.add(player);
-        } else {
-            this.developers.delete(player);
+        // 3) includes name match
+        for (const p of this.all.values()) {
+            if (p.name.toLocaleLowerCase().includes(lower)) return p;
         }
+
+        return null; // not found
     }
 }
-
 export const playerManager = new PlayerManager();

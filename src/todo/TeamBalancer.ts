@@ -1,8 +1,8 @@
 // written by AI.. probably buggy af
 
-import { playerManager } from './PlayerManager';
-import { room, gameManager } from './main';
-import * as util from './util';
+import { playerManager } from '../PlayerManager';
+import { room, gameManager } from '../main';
+import * as util from '../util';
 
 export function balanceTeams() {
     const redPlayers = Array.from(playerManager.redTeam);

@@ -42,15 +42,7 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
         return;
     }
     if (message.startsWith(".") || message.startsWith("!")) {
-        const parseResult = commandManager.parseCommand(player, message.substring(1));
-        if (parseResult.isCommandFound) {
-            //parseResult.command?.execute(player, parseResult.args);
-            const executionResult = commandManager.executeCommand(parseResult);
-            if (executionResult.error) {
-                util.debugLog(executionResult.error);
-                util.errorPM(player, executionResult.error);
-            }
-        }
+        commandManager.parseAndExecuteCommand(player, message.substring(1));
         return false;
     }
 
@@ -64,7 +56,4 @@ room.onRoomLink = (url: string) => {
 };
 
 //export gameManager;
-export { room };
-export { gameManager };
-export { commandManager };
-export { playerManager };
+export { room, gameManager, commandManager, playerManager, util };
