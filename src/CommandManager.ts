@@ -1,5 +1,5 @@
-import type { Player } from "./types";
-import { gameManager } from "./GameManager";
+import type { Player, VanillaPlayer } from "./types";
+import { gameManager, room } from "./GameManager";
 import * as util from "./util";
 import { playerManager } from "./PlayerManager";
 
@@ -23,33 +23,22 @@ export type CommandResult =
 	| { ok: true; message?: string; output?: any }
 	| { ok: false; error: string; needsHelp?: boolean };
 
-// export interface CommandExecResult {
-// 	error: string | null;
-// 	caller: Player;
-// 	command: Command | null;
-// 	args: string[];
-// 	output?: any;
-// 	needsHelp: boolean;
-// }
-
 export class CommandManager {
 	//public commands: Command[];
 	public commands: Record<string, Command>;
 	public commandAliases: Record<string, string>;
 	constructor() {
 		this.commands = {};
-		this.commandAliases = {};
+		this.commandAliases = {
+			"ta": "toggle_admin",
+		};
 	}
-
-	//     export function registerCommand(name: string, descriptions: string[], execute: (player: Player, args: string[]) => void) {
-	// 	commands.push	({ name, descriptions, execute });
+	// registerAlias(alias: string, name: string) {
+	// 	this.commandAliases[alias] = name;
 	// }
-	registerAlias(alias: string, name: string) {
-		this.commandAliases[alias] = name;
-	}
-	unregisterAlias(alias: string) {
-		delete this.commandAliases[alias];
-	}
+	// unregisterAlias(alias: string) {
+	// 	delete this.commandAliases[alias];
+	// }
 	registerCommand(name: string, helpStrings: string[], minArguments: number, cooldownSeconds: number, needsAdmin: boolean, needsSuperAdmin: boolean, execute: (player: Player, args: string[]) => CommandResult) {
 		this.commands[name] = { name, helpStrings, minArguments, cooldownSeconds, needsAdmin, needsSuperAdmin, execute };
 	}
@@ -94,7 +83,8 @@ export class CommandManager {
 		}
 	}
 	parseAndExecuteCommand(player: Player, message: string): void {
-		const parseResult = this.parseCommandInputs(player, message);
+		util.debugLog(`${player.name}: ${message}`);
+		const parseResult = this.parseCommandInputs(player, message.substring(1));
 		if (!parseResult.isCommandFound) {
 			util.errorPM(player, "Command not found");
 			return;
@@ -155,21 +145,21 @@ commandManager.registerCommand("promote",
 		}
 		if (rank === "admin" && player.isAdmin) {
 			if (targetPlayer.isAdmin) {
-				return { ok: false, error: "Player is already admin" };
+				return { ok: false, error: `${targetPlayer.name} is already admin` };
 			}
 			playerManager.setAdmin(targetPlayer, true);
 			return { ok: true, message: `You promoted ${targetPlayer.name} to admin` };
 		}
 		if (player.isSuperAdmin && rank === "superadmin") {
 			if (targetPlayer.isSuperAdmin) {
-				return { ok: false, error: "Player is already super admin" };
+				return { ok: false, error: `${targetPlayer.name} is already super admin` };
 			}
 			playerManager.setSuperAdmin(targetPlayer, true);
 			return { ok: true, message: `You promoted ${targetPlayer.name} to super admin` };
 		}
 		if (player.isSuperAdmin && rank === "dev") {
 			if (targetPlayer.isDeveloper) {
-				return { ok: false, error: "Player is already developer" };
+				return { ok: false, error: `${targetPlayer.name} is already developer` };
 			}
 			playerManager.setDeveloper(targetPlayer, true);
 			return { ok: true, message: `You promoted ${targetPlayer.name} to developer` };
@@ -190,8 +180,38 @@ commandManager.registerCommand("demote",
 		}
 		const isAllowed = (player.isDeveloper && !targetPlayer.isDeveloper) || (player.isSuperAdmin && !targetPlayer.isSuperAdmin) || (targetPlayer.id === player.id);
 		if (!isAllowed) {
-			return { ok: false, error: "You are not allowed to demote this player" };
+			return { ok: false, error: `You are not allowed to demote ${targetPlayer.name}` };
 		}
-		playerManager.setAdmin(targetPlayer, false);
-		return { ok: true, message: `You demoted ${targetPlayer.name}` };
+		if (player.id === targetPlayer.id) {
+			util.warningPM(player, "You demoted yourself");
+		}
+		if (targetPlayer.isSuperAdmin) {
+			playerManager.setSuperAdmin(targetPlayer, false);
+			util.messageSuperAdmins(`${player.name} demoted ${targetPlayer.name} from super admin to admin`);
+			return { ok: true };
+		} else if (targetPlayer.isAdmin) {
+			playerManager.setAdmin(targetPlayer, false);
+			util.messageAdmins(`${player.name} demoted ${targetPlayer.name} from admin`);
+			return { ok: true };
+		} else {
+			return { ok: false, error: "this should never happen" };
+		}
+	});
+
+commandManager.registerCommand("toggle_admin",
+	[".toggle_admin: toggles your admin visibility", ".toggle_admin [player]: toggles admin visibility of another player"],
+	0, 3, true, true, (player, args) => {
+		let targetPlayer = player;
+		if (args.length) {
+			const findTargetPlayer = playerManager.getByQuery(args[0]);
+			if (findTargetPlayer) {
+				targetPlayer = findTargetPlayer;
+			} else {
+				return { ok: false, error: "Player not found" };
+			}
+		}
+		const vanillaPlayer: VanillaPlayer = room.getPlayer(targetPlayer.id);
+		if (!vanillaPlayer) return { ok: false, error: "Player not found" };
+		room.setPlayerAdmin(vanillaPlayer.id, !vanillaPlayer.admin);
+		return { ok: true, message: `${targetPlayer.name}'s admin visibility toggled` };
 	});

@@ -27,7 +27,7 @@ class PlayerManager {
         util.messageAdmins(`${player.name} is ${isAdmin ? "now" : "no longer"} admin`);
     }
     public setSuperAdmin(player: Player, isSuperAdmin: boolean) {
-        if (isSuperAdmin && !this.admins.has(player)) {
+        if (isSuperAdmin && !player.isAdmin) {
             this.setFlag(player, "isAdmin", this.admins, true);
         }
         else if (!isSuperAdmin && player.isDeveloper) {
@@ -37,9 +37,17 @@ class PlayerManager {
         util.messageSuperAdmins(`${player.name} is ${isSuperAdmin ? "now" : "no longer"} a super admin`);
     }
     public setDeveloper(player: Player, isDeveloper: boolean) {
-        if (isDeveloper && !this.admins.has(player)) {
-            this.setFlag(player, "isAdmin", this.admins, true);
+        if (isDeveloper) {
+            if (!player.isAdmin) {
+                this.setFlag(player, "isAdmin", this.admins, true);
+            }
+            if (!player.isSuperAdmin) {
+                this.setFlag(player, "isSuperAdmin", this.superAdmins, true);
+            }
         }
+        // else if (!isDeveloper && player.isSuperAdmin) {
+        //     this.setFlag(player, "isSuperAdmin", this.superAdmins, false);
+        // }
         this.setFlag(player, "isDeveloper", this.developers, isDeveloper);
         util.messageDevelopers(`${player.name} is ${isDeveloper ? "now" : "no longer"} a developer`);
     }

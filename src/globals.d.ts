@@ -11,6 +11,7 @@ declare function HBInit(config: {
 declare const process: {
     env: {
         NODE_ENV: string;
+        HB_TOKEN: string;
         DISCORD_WEBHOOK_URL: string;
     };
 };

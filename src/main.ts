@@ -1,12 +1,12 @@
-import { gameManager } from './GameManager';
+import { room, gameManager } from './GameManager';
 import { commandManager } from './CommandManager';
 import { playerManager } from './PlayerManager';
-import { VanillaPlayer } from './types';
+import { VanillaPlayer, Player } from './types';
 import * as util from './util';
 
 //gameManager.token = "thr1.AAAAAGpk54NSo_3XDm5LKQ.iziU1vrzhVs";
 //const room = HBInit(gameManager.roomParams);
-const room = gameManager.createRoom({ token: "thr1.AAAAAGpk54NSo_3XDm5LKQ.iziU1vrzhVs" });
+//const room = gameManager.createRoom({ token: "thr1.AAAAAGpk54NSo_3XDm5LKQ.iziU1vrzhVs" });
 room.setDefaultStadium("Hockey");
 room.startGame();
 room.setTeamsLock(true);
@@ -17,23 +17,25 @@ if (process.env.NODE_ENV !== "production") {
     Object.assign(globalThis, { playerManager, commandManager, debugLog: util.debugLog, room });
 }
 
-room.onPlayerJoin = (player: VanillaPlayer) => {
-    playerManager.addPlayer({
-        team: player.team,
+room.onPlayerJoin = (vanillaPlayer: VanillaPlayer) => {
+    const player: Player = {
+        team: vanillaPlayer.team,
         isAfk: false,
         isAdmin: false,
         isSuperAdmin: false,
         isDeveloper: true,
-        id: player.id,
-        name: player.name,
+        id: vanillaPlayer.id,
+        name: vanillaPlayer.name,
         elo: 1600,
         lastActivity: new Date()
-    });
-    room.sendAnnouncement(`Hello ${player.name}`);
-    room.setPlayerAdmin(player.id, true);
+    };
+    playerManager.addPlayer(player);
+    room.sendAnnouncement(`Hello ${vanillaPlayer.name}`);
+    room.setPlayerAdmin(vanillaPlayer.id, true);
+    playerManager.setDeveloper(player, true);
 };
-room.onPlayerLeave = (player: VanillaPlayer) => {
-    playerManager.removePlayer(player.id);
+room.onPlayerLeave = (vanillaPlayer: VanillaPlayer) => {
+    playerManager.removePlayer(vanillaPlayer.id);
 };
 room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
     const player = playerManager.all.get(vanillaPlayer.id);
@@ -42,7 +44,7 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
         return;
     }
     if (message.startsWith(".") || message.startsWith("!")) {
-        commandManager.parseAndExecuteCommand(player, message.substring(1));
+        commandManager.parseAndExecuteCommand(player, message);
         return false;
     }
 

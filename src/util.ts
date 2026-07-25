@@ -30,10 +30,27 @@ export function debugLog(message?: unknown) {
     playerManager.developers.forEach(p => room.sendAnnouncement(outputMsg, p.id, Config.colors.gold));
 }
 
+export function messageAdmins(message: string) {
+    message = "[Admins] " + message;
+    playerManager.admins.forEach(p => room.sendAnnouncement(message, p.id, Config.colors.gold));
+}
+export function messageSuperAdmins(message: string) {
+    message = "[SuperAdmins] " + message;
+    playerManager.superAdmins.forEach(p => room.sendAnnouncement(message, p.id, Config.colors.gold));
+}
+export function messageDevelopers(message: string) {
+    message = "[Devs] " + message;
+    playerManager.developers.forEach(p => room.sendAnnouncement(message, p.id, Config.colors.gold));
+}
+
 export function pm(player: Player, message: string) {
     room.sendAnnouncement("[PM] " + message, player.id, Config.colors.teal);
 }
 
 export function errorPM(player: Player, message: string) {
     room.sendAnnouncement("❌ " + message, player.id, Config.colors.error);
+}
+
+export function warningPM(player: Player, message: string) {
+    room.sendAnnouncement("⚠️ " + message, player.id, Config.colors.orange);
 }

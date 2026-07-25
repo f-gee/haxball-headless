@@ -11,6 +11,7 @@ export const Colors = {
     pink: 0xfba9c4,
     gold: 0xffdf00,
     green: 0x92FF0E,
+    orange: 0xff7944,
 } as const;
 
 export const Config = {

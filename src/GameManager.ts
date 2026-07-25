@@ -11,7 +11,7 @@ export class GameManager {
     public captainMode: boolean;
 
     constructor(roomName: string = "Haxball Room", maxPlayers: number = 12, isPublic: boolean = false) {
-        this.token = "[[token]]";
+        this.token = process.env.HB_TOKEN ?? "[[token]]";
         this.roomParams = { roomName, maxPlayers, public: isPublic, noPlayer: true, token: this.token };
         this.adminPasswords = ["attmin1", "attmin2"];
         this.superAdminPasswords = ["sa1", "sa2"];
@@ -29,3 +29,4 @@ export class GameManager {
 }
 
 export const gameManager = new GameManager("My Room", 12, false);
+export const room = gameManager.createRoom({ token: "thr1.AAAAAGplNWKzi8IBjALfQA.NF8XCsCSbvY" });
