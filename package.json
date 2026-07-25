@@ -7,13 +7,15 @@
         "build": "tsc",
         "bundle": "esbuild src/main.ts --bundle --platform=browser --format=iife --target=es2020 --outfile=dist/bundle.js",
         "bundle:min": "esbuild src/main.ts --bundle --minify --platform=browser --format=iife --target=es2020 --outfile=dist/bundle.min.js",
-        "bundle:dev": "esbuild src/main.ts --bundle --global-name=Bot --platform=browser --format=iife --target=es2020 --outfile=dist/bundle.dev.js",
+        "bundle:devnot": "esbuild src/main.ts --bundle --format=iife --global-name=__bundle --outfile=dist/bundle.dev.js",
+        "bundle:dev": "node build.js",
         "bundle:all": "npm run bundle && npm run bundle:min && npm run bundle:dev",
         "build:all": "npm run typecheck && npm run build && npm run bundle",
         "typecheck": "tsc --noEmit",
         "start": "node dist/main.js"
     },
     "devDependencies": {
+        "dotenv": "^17.4.2",
         "esbuild": "^0.28.1",
         "typescript": "^5.5.0"
     }

@@ -18,6 +18,8 @@ class PlayerManager {
         if (player.team === 1) this.redTeam.add(player);
         if (player.team === 2) this.blueTeam.add(player);
         if (player.isAdmin) this.admins.add(player);
+        if (player.isSuperAdmin) this.superAdmins.add(player);
+        if (player.isDeveloper) this.developers.add(player);
     }
 
     public removePlayer(playerId: number) {
@@ -28,6 +30,8 @@ class PlayerManager {
         this.redTeam.delete(player);
         this.blueTeam.delete(player);
         this.admins.delete(player);
+        this.superAdmins.delete(player);
+        this.developers.delete(player);
 
         this.all.delete(playerId);
     }
@@ -45,16 +49,42 @@ class PlayerManager {
         if (newTeam === 1) this.redTeam.add(player);
         if (newTeam === 2) this.blueTeam.add(player);
     }
+
+    public setAdmin(playerId: number, isAdmin: boolean) {
+        const player = this.all.get(playerId);
+        if (!player) return;
+
+        player.isAdmin = isAdmin;
+        if (isAdmin) {
+            this.admins.add(player);
+        } else {
+            this.admins.delete(player);
+        }
+    }
+
+    public setSuperAdmin(playerId: number, isSuperAdmin: boolean) {
+        const player = this.all.get(playerId);
+        if (!player) return;
+
+        player.isSuperAdmin = isSuperAdmin;
+        if (isSuperAdmin) {
+            this.superAdmins.add(player);
+        } else {
+            this.superAdmins.delete(player);
+        }
+    }
+
+    public setDeveloper(playerId: number, isDeveloper: boolean) {
+        const player = this.all.get(playerId);
+        if (!player) return;
+
+        player.isDeveloper = isDeveloper;
+        if (isDeveloper) {
+            this.developers.add(player);
+        } else {
+            this.developers.delete(player);
+        }
+    }
 }
 
 export const playerManager = new PlayerManager();
-
-// Add some players
-// manager.addPlayer({
-//   id: 1,
-//   name: "Alice",
-//   team: 1, // red
-//   isAdmin: true,
-//   elo: 1500,
-//   lastActivity: new Date()
-// });

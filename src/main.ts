@@ -4,20 +4,26 @@ import { playerManager } from './PlayerManager';
 import { VanillaPlayer } from './types';
 import * as util from './util';
 
-//const gameManager = new GameManager("My Room", 12, false, "[[token]]");
-const room = HBInit(gameManager.roomParams);
+//gameManager.token = "thr1.AAAAAGpk54NSo_3XDm5LKQ.iziU1vrzhVs";
+//const room = HBInit(gameManager.roomParams);
+const room = gameManager.createRoom({ token: "thr1.AAAAAGpk54NSo_3XDm5LKQ.iziU1vrzhVs" });
 room.setDefaultStadium("Hockey");
 room.startGame();
 room.setTeamsLock(true);
 room.setScoreLimit(3);
 room.setTimeLimit(5);
-// test
+
+if (process.env.NODE_ENV !== "production") {
+    Object.assign(globalThis, { playerManager, commandManager, debugLog: util.debugLog, room });
+}
+
 room.onPlayerJoin = (player: VanillaPlayer) => {
     playerManager.addPlayer({
         team: player.team,
+        isAfk: false,
         isAdmin: false,
         isSuperAdmin: false,
-        isDeveloper: false,
+        isDeveloper: true,
         id: player.id,
         name: player.name,
         elo: 1600,
@@ -36,24 +42,25 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
         return;
     }
     if (message.startsWith(".") || message.startsWith("!")) {
-        const parseResult = commandManager.parseCommand(player, message);
+        const parseResult = commandManager.parseCommand(player, message.substring(1));
         if (parseResult.isCommandFound) {
             //parseResult.command?.execute(player, parseResult.args);
-            commandManager.executeCommand(parseResult);
-        }
-    }
-    const [cmd, ...args] = message.slice(1).split(" ");
-
-    console.info(cmd, args);
-
-    switch (cmd) {
-        case "admin": {
-            if (gameManager.adminPasswords.indexOf(args[0]) !== -1) {
-
+            const executionResult = commandManager.executeCommand(parseResult);
+            if (executionResult.error) {
+                util.debugLog(executionResult.error);
+                util.errorPM(player, executionResult.error);
             }
-        } break;
+        }
+        return false;
     }
 
+};// onPlayerChat
+
+room.onRoomLink = (url: string) => {
+    try {
+        console.log("TMP, onRoomLink");
+        window.open(url, '_blank')?.focus();
+    } catch (e) { }
 };
 
 //export gameManager;

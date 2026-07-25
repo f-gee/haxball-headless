@@ -92,4 +92,18 @@ commandManager.registerCommand("admin", ["Get admin privileges"], (player: Playe
 commandManager.registerCommand("testerror", [""], (player: Player, args: string[]) => {
 	throw new Error("Test error");
 	return [null, null];
-})
+	//const x = 5;
+	//x += 1;
+	//return [x, null];
+});
+commandManager.registerCommand("json", [""], (player: Player, args: string[]) => {
+	try {
+		util.debugLog(`trying to parse: ${args.join(" ")}`);
+		const outputObj = JSON.parse(args.join(" "));
+		util.pm(player, JSON.stringify(outputObj));
+		return [outputObj, null];
+	} catch (error) {
+		util.pm(player, "JSON parse error");
+		return [null, "JSON parse error"];
+	}
+});

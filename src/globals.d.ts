@@ -6,3 +6,11 @@ declare function HBInit(config: {
     token?: string;
     [key: string]: any;
 }): any;
+
+// to check if (process.env.NODE_ENV !== "production")
+declare const process: {
+    env: {
+        NODE_ENV: string;
+        DISCORD_WEBHOOK_URL: string;
+    };
+};

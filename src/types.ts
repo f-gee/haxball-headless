@@ -1,5 +1,6 @@
 export interface Player {
     team: number;
+    isAfk: boolean;
     isAdmin: boolean;
     isSuperAdmin: boolean;
     isDeveloper: boolean;
