@@ -2,12 +2,13 @@ export interface Player {
     team: number;
     isAdmin: boolean;
     isSuperAdmin: boolean;
+    isDeveloper: boolean;
     id: number;
     name: string;
     elo: number;
     lastActivity: Date;
 }
-export interface HaxballPlayer {
+export interface VanillaPlayer {
     id: number;
     name: string;
     team: number;
