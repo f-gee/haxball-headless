@@ -1,4 +1,4 @@
-# haxball_headless_v9
+# Haxball Headless Server
 
 Haxball headless bot, written in TypeScript, compiled with `tsc`, bundled with `esbuild`.
 
@@ -9,25 +9,6 @@ npm install
 ```
 
 This installs `typescript` and `esbuild` as dev dependencies.
-
-## Project structure
-
-```
-src/
-  main.ts        # entry point
-  room.ts        # creates the room via HBInit
-  state.ts       # shared bot state
-  events.ts      # room.onX event handlers
-  util.ts        # helper functions
-  ...             # other feature modules
-  globals.d.ts    # ambient declaration for HBInit (provided by the host at runtime)
-tsconfig.json
-package.json
-```
-
-`HBInit` isn't a real import — it's injected by the Haxball headless host environment
-when the bundle runs. `src/globals.d.ts` just tells TypeScript it exists so type-checking
-doesn't complain; you never import it yourself.
 
 ## Everyday commands
 

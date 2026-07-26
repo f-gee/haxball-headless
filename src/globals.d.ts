@@ -15,3 +15,5 @@ declare const process: {
         DISCORD_WEBHOOK_URL: string;
     };
 };
+
+declare const __BOT_VERSION__: string;

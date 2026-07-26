@@ -1,7 +1,6 @@
 import { Config } from "./config";
 import { room } from "./main";
-import { playerManager } from "./PlayerManager";
-import { Player } from "./types";
+import { Player, playerManager } from "./PlayerManager";
 export function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -9,7 +8,17 @@ export function sleep(ms: number): Promise<void> {
 export function shuffleArray<T>(arr: T[]): T[] {
     return [...arr].sort(() => Math.random() - 0.5);
 }
-
+export function getRandomFromArray<T>(arr: readonly T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+export function getRandomFromSet<T>(set: ReadonlySet<T>): T {
+    if (set.size === 0) throw new Error("set is empty");
+    const idx = Math.floor(Math.random() * set.size);
+    let i = 0;
+    for (const item of set) {
+        if (i++ === idx) return item;
+    }
+    throw new Error("set is empty");
+}
+export function nameToMention(name: string) { return "@" + name.replaceAll(" ", "_"); }
 export function debugLog(message?: unknown) {
     let text: string;
 

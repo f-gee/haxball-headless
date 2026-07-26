@@ -1,5 +1,27 @@
 import * as util from "./util";
-import { Player } from "./types";
+import { room } from "./GameManager";
+export interface Player {
+    team: number;
+    isAfk: boolean;
+    isAdmin: boolean;
+    isSuperAdmin: boolean;
+    isDeveloper: boolean;
+    isVip: boolean;
+    id: number;
+    name: string;
+    elo: number;
+    lastActivity: Date;
+    spectatingSince: Date;
+    restoreTeam: number;
+}
+export interface VanillaPlayer {
+    id: number;
+    name: string;
+    team: number;
+    admin: boolean;
+    conn: string;
+    auth: string;
+}
 
 class PlayerManager {
     public all = new Map<number, Player>();
@@ -10,6 +32,10 @@ class PlayerManager {
     public superAdmins = new Set<Player>();
     public developers = new Set<Player>();
 
+    public setVip(player: Player, isVip: boolean) {
+        player.isVip = isVip;
+        util.messageDevelopers(`${player.name} is ${isVip ? "now" : "no longer"} a vip`);
+    }
     private setFlag(player: Player, flagKey: "isAdmin" | "isSuperAdmin" | "isDeveloper", targetSet: Set<Player>, value: boolean) {
         if (!player) return;
 
@@ -81,12 +107,16 @@ class PlayerManager {
         this.all.delete(playerId);
     }
 
-    public handleTeamChange(playerId: number, newTeam: number) {
-        const player = this.all.get(playerId);
-        if (!player) return;
+    public handleTeamChange(player: Player, newTeam: number) {
         this.removeFromTeamSet(player, player.team);
         player.team = newTeam;
         this.addToTeamSet(player, newTeam);
+    }
+    public async movePlayerToTeam(player: Player, newTeam: number) {
+        const oldTeam = player.team;
+        if (oldTeam === newTeam) { return }
+        this.handleTeamChange(player, newTeam);
+        await room.setPlayerTeam(player.id, newTeam);
     }
     getByQuery(query: string): Player | null {
         const lower = query.toLocaleLowerCase();

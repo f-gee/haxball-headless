@@ -1,7 +1,6 @@
-import type { Player, VanillaPlayer } from "./types";
 import { gameManager, room } from "./GameManager";
 import * as util from "./util";
-import { playerManager } from "./PlayerManager";
+import { playerManager, Player, VanillaPlayer } from "./PlayerManager";
 
 export interface Command {
 	name: string;
@@ -117,7 +116,11 @@ commandManager.registerCommand("help", ["Get help"], 0, 5, false, false, (player
 		.map(c => `.${c.name}`)        // simple formatting
 		.join(" ");
 	util.pm(player, `Commands: ${commandList}`);
-	return { ok: true, message: "Help sent" };
+	return { ok: true };
+});
+commandManager.registerCommand("version", ["Get bot version"], 0, 5, false, false, (player, args) => {
+	//util.pm(player, `Version: ${__BOT_VERSION__}`);
+	return { ok: true, message: `Version: ${__BOT_VERSION__}` };
 });
 commandManager.registerCommand("admin", [".admin [password]: Get admin privileges"], 1, 5, false, false, (player, args) => {
 	const passwordInput = args[0];
