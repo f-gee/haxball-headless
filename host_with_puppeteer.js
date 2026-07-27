@@ -65,9 +65,10 @@ const getOrLaunchBrowser = async () => {
         return browser;
     } else {
         browser = await puppeteer.launch({
-            //executablePath: "/usr/bin/chromium",
-            executablePath: "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
             //channel: 'chrome',
+            //executablePath: "/usr/bin/chromium",
+            //executablePath: "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+            executablePath: process.platform === 'linux' ? '/usr/bin/chromium' : 'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe',
             headless: true,
             userDataDir: process.cwd() + '/puppeteer-data',
             args: [
