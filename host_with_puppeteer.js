@@ -64,11 +64,23 @@ const getOrLaunchBrowser = async () => {
     if (browser) {
         return browser;
     } else {
+        let executablePath;
+
+        if (process.platform === 'linux') {
+            executablePath = '/usr/bin/chromium';
+        } else {
+            executablePath = 'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe';
+        }
+
+        // Safety check: verify the file actually exists before launching
+        if (!fs.existsSync(executablePath)) {
+            throw new Error(`[Puppeteer Error] Executable not found at path: ${executablePath}`);
+        }
         browser = await puppeteer.launch({
             //channel: 'chrome',
             //executablePath: "/usr/bin/chromium",
             //executablePath: "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
-            executablePath: process.platform === 'linux' ? '/usr/bin/chromium' : 'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe',
+            executablePath: executablePath,
             headless: true,
             userDataDir: process.cwd() + '/puppeteer-data',
             args: [
@@ -77,7 +89,8 @@ const getOrLaunchBrowser = async () => {
                 "--disable-features=WebRtcHideLocalIpsWithMdns",
                 "--disable-web-security",
                 "--allow-running-insecure-content",
-                "--disable-features=BlockInsecurePrivateNetworkRequests"
+                "--disable-features=BlockInsecurePrivateNetworkRequests",
+                "--disable-dev-shm-usage"
             ]
         });
         return browser;
