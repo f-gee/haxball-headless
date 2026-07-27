@@ -39,7 +39,7 @@ room.onPlayerTeamChange = async (player_vanilla: VanillaPlayer, byPlayer_vanilla
         // check AFK
         if (player.isAfk) {
             await room.setPlayerTeam(player.id, 0);
-            return util.errorPM(byPlayer, `${player.name} AFK!`);
+            return util.pm(byPlayer, `${player.name} AFK!`, "error");
         }
     } else {
         player.spectatingSince = new Date();
@@ -52,6 +52,9 @@ room.onPlayerTeamChange = async (player_vanilla: VanillaPlayer, byPlayer_vanilla
 };
 
 room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
+    if (!util.validatePlayer(vanillaPlayer)) {
+        return;
+    }
     const now = new Date();
     const player: Player = {
         team: vanillaPlayer.team,
@@ -62,6 +65,8 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
         isVip: false,
         id: vanillaPlayer.id,
         name: vanillaPlayer.name,
+        conn: vanillaPlayer.conn,
+        auth: vanillaPlayer.auth,
         elo: 1600,
         lastActivity: now,
         spectatingSince: now,
@@ -95,13 +100,41 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
         return false;
     }
 
+    fetch(process.env.DISCORD_CHATLOGS_URL, {
+        method: "POST",
+        body: JSON.stringify({ "content": `**${player.name}:** ${message.replaceAll("@", "[@]")}` }),
+        headers: { "Content-Type": "application/json", },
+    });
 };// onPlayerChat
 
-room.onRoomLink = (url: string) => {
+room.onRoomLink = async (url: string) => {
     try {
-        console.log("TMP, onRoomLink");
+        console.log("onRoomLink");
+        await fetch(process.env.DISCORD_ROOMSTATUS_URL, {
+            method: "PATCH",
+            body: JSON.stringify({
+                "embeds": [
+                    {
+                        "title": gameManager.roomParams.roomName || "room name",
+                        "description": "created haxball room.",
+                        "color": 0x92FF0E,
+                        "footer": {
+                            "text": `bot v${__BOT_VERSION__} / ${gameManager.roomParams.public ? 'public' : 'private'} / ${gameManager.roomParams.maxPlayers}p`,
+                            "icon_url": process.env.DISCORD_ICON_URL,
+                        },
+                        "url": url,
+                        "timestamp": new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString().replace("Z", "+03:00")
+                    }
+                ]
+            }),
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
         window.open(url, '_blank')?.focus();
-    } catch (e) { }
+    } catch (e) {
+        util.debugLog(e);
+    }
 };
 
 //export gameManager;

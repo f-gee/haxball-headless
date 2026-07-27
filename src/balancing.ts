@@ -50,7 +50,8 @@ export async function balanceTeams() {
     const btLog = util.debugLog;
     const orderedSpecsArray = [...playerManager.spectators].filter(a => !a.isAfk).sort((a, b) => +a.spectatingSince - +b.spectatingSince);
     btLog(`orderedSpecsArray = ` + orderedSpecsArray.map(x => x.name).join(', '));
-    const totalActivePlayers = playerManager.redTeam.size + playerManager.blueTeam.size + orderedSpecsArray.length;
+    //const totalActivePlayers = playerManager.redTeam.size + playerManager.blueTeam.size + orderedSpecsArray.length;
+    const totalActivePlayers = playerManager.all.size - playerManager.afks.size;
     // first, remove any overflow
     if (playerManager.redTeam.size > gameManager.teamCaps.red) {
         let numToRemove = playerManager.redTeam.size - gameManager.teamCaps.red;

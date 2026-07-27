@@ -1,48 +1,3 @@
-
-async function launchRoomAndGetLink(token) {
-    const b = await getBrowser();
-    const page = await b.newPage();
-
-    let resolveLink;
-    const linkPromise = new Promise((resolve) => { resolveLink = resolve; });
-
-    await page.exposeFunction("__onRoomLinkReceived", (url) => {
-        resolveLink(url);
-    });
-
-    await page.goto("https://www.haxball.com/headlesshost", { waitUntil: "domcontentloaded" });
-
-    // Make the token available inside the page before bundle.min.js runs
-    await page.evaluate((t) => { window.HB_TOKEN = t; }, token);
-
-    const bundleCode = fs.readFileSync(BUNDLE_PATH, "utf8");
-    await page.addScriptTag({ content: bundleCode });
-
-    await page.evaluate(() => {
-        const attach = () => {
-            if (!window.room) {
-                setTimeout(attach, 50);
-                return;
-            }
-            const original = window.room.onRoomLink;
-            window.room.onRoomLink = (url) => {
-                if (typeof original === "function") original(url);
-                window.__onRoomLinkReceived(url);
-            };
-        };
-        attach();
-    });
-
-    const roomLink = await Promise.race([
-        linkPromise,
-        new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Timed out waiting for room link")), 20000)
-        ),
-    ]);
-
-    return { page, roomLink };
-}
-
 const express = require('express');
 const fs = require('fs');
 const puppeteer = require("puppeteer-core");
@@ -106,23 +61,14 @@ app.get('/createRoom', async (req, res, next) => {
 
     try {
         const token = parseHaxballToken(req.query.token);
-        const botCode = fs.readFileSync(process.cwd() + '/dist/bundle.dev.js', 'utf8');
+        const botCode = fs.readFileSync(process.cwd() + '/dist/bundle.puppeteer.js', 'utf8');
 
         const browser = await getOrLaunchBrowser();
         page = await browser.newPage();
 
-        let resolveLink;
-        const linkPromise = new Promise((resolve) => { resolveLink = resolve; });
-
-        // Expose function strictly to resolve the local promise (NO res.json here)
-        await page.exposeFunction("__onRoomLinkReceived", (url) => {
-            resolveLink(url);
-        });
-
-        await page.evaluate((t) => { window.HB_TOKEN = t; }, token);
         await page.goto("https://www.haxball.com/headless", { waitUntil: "networkidle2" });
-
         await page.waitForFunction(() => typeof HBInit !== "undefined");
+        await page.evaluate((t) => { window.HB_TOKEN = t; }, token);
 
         page.on('console', async (msg) => {
             const args = await Promise.all(msg.args().map(arg => arg.jsonValue()));
@@ -134,32 +80,8 @@ app.get('/createRoom', async (req, res, next) => {
         });
 
         await page.addScriptTag({ content: botCode });
-
-        await page.evaluate(() => {
-            const attach = () => {
-                if (!window.room) {
-                    setTimeout(attach, 50);
-                    return;
-                }
-                const original = window.room.onRoomLink;
-                window.room.onRoomLink = (url) => {
-                    if (typeof original === "function") original(url);
-                    window.__onRoomLinkReceived(url);
-                };
-            };
-            attach();
-        });
-
-        // Wait for either the room link or the 20s timeout
-        const roomLink = await Promise.race([
-            linkPromise,
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error("Timed out waiting for room link")), 20000)
-            ),
-        ]);
-
         // Send single, successful response here
-        return res.json({ ok: true, message: "room created: " + roomLink, roomLink });
+        return res.json({ ok: true, message: "room created" });
 
     } catch (err) {
         // Clean up page if something failed before sending an error response

@@ -10,6 +10,13 @@ npm install
 
 This installs `typescript` and `esbuild` as dev dependencies.
 
+## Environment:
+.env file:
+```
+DISCORD_ROOMSTATUS_URL=https://discord.com/api/webhooks/[webhookId]/[token]/messages/[messageId]?thread_id=[threadId]
+DISCORD_CHATLOGS_URL=https://discord.com/api/webhooks/[webhookId]/[token]?thread_id=[threadId]
+```
+
 ## Everyday commands
 
 | Command | What it does |

@@ -1,6 +1,7 @@
 import { gameManager, room } from "./GameManager";
 import * as util from "./util";
 import { playerManager, Player, VanillaPlayer } from "./PlayerManager";
+import * as balancing from './balancing'
 
 export interface Command {
 	name: string;
@@ -20,8 +21,8 @@ interface CommandParseResult {
 	args: string[];
 }
 export type CommandResult =
-	| { ok: true; message?: string; output?: any }
-	| { ok: false; error: string; needsHelp?: boolean };
+	| { ok: true; message?: string; error?: any, success?: any, info?: string, warning?: string }
+	| { ok: false; message?: string; error?: string; needsHelp?: boolean, success?: any, info?: string, warning?: string };
 
 export class CommandManager {
 	//public commands: Command[];
@@ -88,11 +89,11 @@ export class CommandManager {
 		util.messageDevelopers(`${player.name}: ${message}`);
 		const parseResult = this.parseCommandInputs(player, message.substring(1));
 		if (!parseResult.isCommandFound) {
-			util.errorPM(player, `. ${parseResult.command?.name}: command not found`);
+			util.pm(player, `.${parseResult.commandName}: command not found`, "error");
 			return;
 		}
 		if (parseResult.command && parseResult.args.length < parseResult.command.minArguments) {
-			util.errorPM(player, `Too few arguments. Use .help ${parseResult.command.name}`);
+			util.pm(player, `Too few arguments. Use .help ${parseResult.command.name}`, "error");
 			return;
 		}
 		const result = await this.executeCommand(parseResult);
@@ -102,12 +103,23 @@ export class CommandManager {
 			}
 		} else {
 			if (result.error) {
-				util.debugLog(result.error);
-				util.errorPM(player, result.error);
+				util.pm(player, result.error, "error");
+			}
+			if (result.warning) {
+				util.pm(player, result.warning, "warning");
+			}
+			if (result.info) {
+				util.pm(player, result.info, "info");
+			}
+			if (result.success) {
+				util.pm(player, result.success, "success");
+			}
+			if (result.message) {
+				util.pm(player, result.message);
 			}
 			if (result.needsHelp) {
 				const commandName = parseResult.command?.name || "";
-				util.errorPM(player, `For help type .help ${commandName}`);
+				util.pm(player, `For help type .help ${commandName}`, "error");
 			}
 		}
 	}
@@ -116,7 +128,7 @@ export class CommandManager {
 export const commandManager = new CommandManager();
 commandManager.registerCommand({
 	name: "help", helpStrings: ["Get help"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false, execute: (player, args) => {
-		if (args.length) {
+		if (args.length) { // .help [commandName]
 			const commandName = args[0];
 			let command = commandManager.commands[commandName];
 			if (!command) {
@@ -125,14 +137,14 @@ commandManager.registerCommand({
 			if (!command) {
 				return { ok: false, error: "Command not found" };
 			}
-			util.infoPM(player, `Command: .${command.name}`);
+			util.pm(player, `Command: .${command.name}`, "info");
 			for (const helpString of command.helpStrings) {
-				util.infoPM(player, helpString);
+				util.pm(player, helpString, "info");
 			}
 			return { ok: true };
-		} else {
+		} else { // general help
 			const commandList = Object.values(commandManager.commands)
-				.map(c => `.${c.name}`)        // simple formatting
+				.map(c => `.${c.name}`)
 				.join(" ");
 			util.pm(player, `Commands: ${commandList}`);
 			return { ok: true };
@@ -147,20 +159,40 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
+	name: "getparam", helpStrings: [".getparam [moduleName] [variableName]"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
+	execute: (player, args) => {
+		let targetModule: any, targetVariable: any, outMessage: any;
+		const moduleName = args[0];
+		const variableName = args[1];
+		switch (moduleName) {
+			case "commandManager":
+				targetModule = commandManager;
+				break;
+			case "gameManager":
+				targetModule = gameManager;
+				break;
+			default:
+				return { ok: false, error: "Invalid module name" };
+		}
+		targetVariable = targetModule[variableName];
+		return { ok: true, info: `Value: ${targetVariable}` };
+	}
+});
+commandManager.registerCommand({
 	name: "admin", helpStrings: [".admin [password]: Get admin privileges"], minArguments: 1, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
 	execute: (player, args) => {
 		const passwordInput = args[0];
 		if (gameManager.adminPasswords.includes(passwordInput)) {
 			playerManager.setAdmin(player, true);
-			return { ok: true, message: "You are now admin" };
+			return { ok: true, success: "You are now admin" };
 		}
 		if (gameManager.superAdminPasswords.includes(passwordInput)) {
 			playerManager.setSuperAdmin(player, true);
-			return { ok: true, message: "You are super admin" };
+			return { ok: true, success: "You are now super admin" };
 		}
 		if (gameManager.developerPasswords.includes(passwordInput)) {
 			playerManager.setDeveloper(player, true);
-			return { ok: true, message: "You are developer" };
+			return { ok: true, success: "You are developer" };
 		}
 		return { ok: false, error: "Invalid password" };
 	}
@@ -178,21 +210,21 @@ commandManager.registerCommand({
 				return { ok: false, error: `${targetPlayer.name} is already admin` };
 			}
 			playerManager.setAdmin(targetPlayer, true);
-			return { ok: true, message: `You promoted ${targetPlayer.name} to admin` };
+			return { ok: true, info: `You promoted ${targetPlayer.name} to admin` };
 		}
 		if (player.isSuperAdmin && rank === "superadmin") {
 			if (targetPlayer.isSuperAdmin) {
 				return { ok: false, error: `${targetPlayer.name} is already super admin` };
 			}
 			playerManager.setSuperAdmin(targetPlayer, true);
-			return { ok: true, message: `You promoted ${targetPlayer.name} to super admin` };
+			return { ok: true, info: `You promoted ${targetPlayer.name} to super admin` };
 		}
 		if (player.isSuperAdmin && rank === "dev") {
 			if (targetPlayer.isDeveloper) {
 				return { ok: false, error: `${targetPlayer.name} is already developer` };
 			}
 			playerManager.setDeveloper(targetPlayer, true);
-			return { ok: true, message: `You promoted ${targetPlayer.name} to developer` };
+			return { ok: true, info: `You promoted ${targetPlayer.name} to developer` };
 		}
 		return { ok: false, error: "Invalid rank" };
 	}
@@ -214,7 +246,7 @@ commandManager.registerCommand({
 		}
 		const demoteText = targetPlayer.isSuperAdmin ? "from super admin to admin" : "from admin";
 		if (player.id === targetPlayer.id) {
-			util.warningPM(player, `You demoted yourself ${demoteText}`);
+			util.pm(player, `You demoted yourself ${demoteText}`, "warning");
 		}
 		if (targetPlayer.isSuperAdmin) {
 			playerManager.setSuperAdmin(targetPlayer, false);
@@ -244,7 +276,7 @@ commandManager.registerCommand({
 		const vanillaPlayer: VanillaPlayer = room.getPlayer(targetPlayer.id);
 		if (!vanillaPlayer) return { ok: false, error: "Player not found" };
 		room.setPlayerAdmin(vanillaPlayer.id, !vanillaPlayer.admin);
-		return { ok: true, message: `${targetPlayer.name}'s admin visibility toggled` };
+		return { ok: true, success: `${targetPlayer.name}'s admin visibility toggled` };
 	}
 });
 commandManager.registerCommand({
@@ -259,9 +291,38 @@ commandManager.registerCommand({
 				return { ok: false, error: "Player not found" };
 			}
 		}
-		targetPlayer.isAfk = true;
-		await playerManager.movePlayerToTeam(targetPlayer, 0);
-		util.say(`${targetPlayer.name} is now AFK`);
-		return { ok: true };
+		if (targetPlayer.isAfk) {
+			return { ok: true, warning: `${targetPlayer.name} is already AFK` };
+		} else {
+			await playerManager.setAfk(targetPlayer, true);
+			util.say(`${targetPlayer.name} is now AFK`);
+			await playerManager.movePlayerToTeam(targetPlayer, 0);
+			//await balancing.reorderSpecs();
+			await balancing.balanceTeamsWithTimeout(1000);
+			return { ok: true };
+		}
+	}
+});
+commandManager.registerCommand({
+	name: "back", helpStrings: [".back: removes your afk status", ".back [player]: removes another player's afk status"], minArguments: 0, cooldownSeconds: 10, needsAdmin: false, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		let targetPlayer = player;
+		if (args.length) {
+			const findTargetPlayer = playerManager.getByQuery(args[0]);
+			if (findTargetPlayer) {
+				targetPlayer = findTargetPlayer;
+			} else {
+				return { ok: false, error: "Player not found" };
+			}
+		}
+		if (!targetPlayer.isAfk) {
+			return { ok: true, warning: `${targetPlayer.name} is not AFK` };
+		} else {
+			await playerManager.setAfk(targetPlayer, false);
+			util.say(`${targetPlayer.name} is no longer AFK`);
+			await playerManager.movePlayerToTeam(targetPlayer, 0);
+			await balancing.balanceTeamsWithTimeout(1000);
+			return { ok: true };
+		}
 	}
 });

@@ -9,6 +9,8 @@ export interface Player {
     isVip: boolean;
     id: number;
     name: string;
+    conn: string;
+    auth: string;
     elo: number;
     lastActivity: Date;
     spectatingSince: Date;
@@ -32,6 +34,7 @@ class PlayerManager {
     public spectators = new Set<Player>();
     public redTeam = new Set<Player>();
     public blueTeam = new Set<Player>();
+    public afks = new Set<Player>();
     public admins = new Set<Player>();
     public superAdmins = new Set<Player>();
     public developers = new Set<Player>();
@@ -119,8 +122,19 @@ class PlayerManager {
     public async movePlayerToTeam(player: Player, newTeam: number) {
         const oldTeam = player.team;
         if (oldTeam === newTeam) { return }
+        if (newTeam === 0) {
+            player.spectatingSince = new Date();
+        }
         this.handleTeamChange(player, newTeam);
         await room.setPlayerTeam(player.id, newTeam);
+    }
+    public async setAfk(player: Player, isAfk: boolean) {
+        player.isAfk = isAfk;
+        if (isAfk) {
+            this.afks.add(player);
+        } else {
+            this.afks.delete(player);
+        }
     }
     getByQuery(query: string): Player | null {
         const lower = query.toLocaleLowerCase();

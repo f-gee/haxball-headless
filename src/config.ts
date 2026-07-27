@@ -16,7 +16,8 @@ export const Colors = {
 
 export const Config = {
     colors: Colors,
-    discord: {
-        webhookUrl: process.env.DISCORD_WEBHOOK_URL ?? "",
-    },
+    // discord: {
+    //     webhookUrl: process.env.DISCORD_WEBHOOK_URL ?? "",
+    // },
+    haxballEnv: process.env.HAXBALL_ENV,
 } as const;

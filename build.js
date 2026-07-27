@@ -1,35 +1,45 @@
-require("dotenv").config();
+const dotenv = require("dotenv");
 const esbuild = require("esbuild");
 const pkg = require("./package.json");
+// 1. Parse ONLY the .env file contents
+const envConfig = dotenv.config().parsed || {};
+
+// 2. Map only those .env keys to esbuild define format
+const envDefine = Object.entries(envConfig).reduce((acc, [key, value]) => {
+    acc[`process.env.${key}`] = JSON.stringify(value);
+    return acc;
+}, {});
 
 esbuild.build({
     entryPoints: ["src/main.ts"],
+    outfile: "dist/bundle.browser_dev.js",
     bundle: true,
+    globalName: "bot", // exposes exports as window.bot
     format: "iife",
     charset: 'utf8',
-    globalName: "bot", // exposes exports as window.bot
-    outfile: "dist/bundle.dev.js",
+    platform: "browser",
+    target: "es2020",
     define: {
         "process.env.NODE_ENV": '"development"',
-        "process.env.DISCORD_WEBHOOK_URL": JSON.stringify(process.env.DISCORD_WEBHOOK_URL ?? ""),
-        'process.env.HB_TOKEN': JSON.stringify(process.env.HB_TOKEN ?? ''),
+        ...envDefine, // Spread all dynamically parsed .env variables
+        "process.env.HAXBALL_ENV": JSON.stringify(process.env.HAXBALL_ENV || 'browser'),
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
 }).catch(() => process.exit(1));
 
 esbuild.build({
     entryPoints: ["src/main.ts"],
+    outfile: "dist/bundle.puppeteer.js",
     bundle: true,
     minify: true,
-    platform: "browser",
-    target: "es2020",
     format: "iife",
     charset: 'utf8',
-    outfile: "dist/bundle.min.js",
+    platform: "browser",
+    target: "es2020",
     define: {
         "process.env.NODE_ENV": '"production"',
-        "process.env.DISCORD_WEBHOOK_URL": JSON.stringify(process.env.DISCORD_WEBHOOK_URL ?? ""),
-        'process.env.HB_TOKEN': JSON.stringify(process.env.HB_TOKEN ?? ''),
+        ...envDefine, // Spread all dynamically parsed .env variables
+        "process.env.HAXBALL_ENV": JSON.stringify(process.env.HAXBALL_ENV || 'puppeteer'),
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
 }).catch(() => process.exit(1));
