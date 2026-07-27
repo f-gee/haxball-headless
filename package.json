@@ -18,5 +18,9 @@
         "dotenv": "^17.4.2",
         "esbuild": "^0.28.1",
         "typescript": "^5.5.0"
+    },
+    "dependencies": {
+        "express": "^5.2.1",
+        "puppeteer-core": "^25.4.0"
     }
 }

@@ -13,6 +13,10 @@ export interface Player {
     lastActivity: Date;
     spectatingSince: Date;
     restoreTeam: number;
+    commandCooldownUntil: Date;
+    chatMutedUntil: Date;
+    chatLastTimestamp: Date;
+    chatSpamTickets: number;
 }
 export interface VanillaPlayer {
     id: number;

@@ -70,7 +70,7 @@ export async function balanceTeams() {
     }
     // now add specs
     let numSpecsNeeded = Math.min(gameManager.teamCaps.red + gameManager.teamCaps.blue - (playerManager.redTeam.size + playerManager.blueTeam.size), orderedSpecsArray.length);
-    btLog(`numSpecsNeeded` + numSpecsNeeded + " totalActivePlayers" + totalActivePlayers + " redTeam.size" + playerManager.redTeam.size + " blueTeam.size" + playerManager.blueTeam.size);
+    //btLog(`numSpecsNeeded` + numSpecsNeeded + " totalActivePlayers" + totalActivePlayers + " redTeam.size" + playerManager.redTeam.size + " blueTeam.size" + playerManager.blueTeam.size);
     if (numSpecsNeeded > 0) {
         let targetTeam;
         const specs = orderedSpecsArray.slice(0, numSpecsNeeded);

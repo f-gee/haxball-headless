@@ -6,6 +6,7 @@ esbuild.build({
     entryPoints: ["src/main.ts"],
     bundle: true,
     format: "iife",
+    charset: 'utf8',
     globalName: "bot", // exposes exports as window.bot
     outfile: "dist/bundle.dev.js",
     define: {

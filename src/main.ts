@@ -65,7 +65,11 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
         elo: 1600,
         lastActivity: now,
         spectatingSince: now,
-        restoreTeam: 0
+        restoreTeam: 0,
+        commandCooldownUntil: now,
+        chatMutedUntil: now,
+        chatLastTimestamp: now,
+        chatSpamTickets: 0
     };
     playerManager.addPlayer(player);
     room.sendAnnouncement(`Hello ${vanillaPlayer.name}`);
@@ -83,6 +87,9 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
         //util.debugLog(`onPlayerChat: player not found for player ${vanillaPlayer.name} #${vanillaPlayer.id}`);
         return;
     }
+    if (!util.checkSpam(player, message)) {
+        return false
+    };
     if (message.startsWith(".") || message.startsWith("!")) {
         commandManager.parseAndExecuteCommand(player, message);
         return false;
