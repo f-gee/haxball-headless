@@ -16,6 +16,7 @@ interface CommandParseResult {
 	caller: Player;
 	isCommandFound: boolean;
 	command: Command | null;
+	commandName: string;
 	args: string[];
 }
 export type CommandResult =
@@ -45,13 +46,14 @@ export class CommandManager {
 		delete this.commands[name];
 	}
 	parseCommandInputs(player: Player, message: string) {
+		const [cmd, ...args] = message.split(" ");
 		const parseResult: CommandParseResult = {
 			caller: player,
 			isCommandFound: false,
 			command: null,
+			commandName: cmd,
 			args: []
 		}
-		const [cmd, ...args] = message.split(" ");
 		let command: Command = this.commands[cmd];
 		if (!command) {
 			command = this.commands[this.commandAliases[cmd]];
@@ -86,7 +88,7 @@ export class CommandManager {
 		util.messageDevelopers(`${player.name}: ${message}`);
 		const parseResult = this.parseCommandInputs(player, message.substring(1));
 		if (!parseResult.isCommandFound) {
-			util.errorPM(player, "Command not found");
+			util.errorPM(player, `. ${parseResult.command?.name}: command not found`);
 			return;
 		}
 		if (parseResult.command && parseResult.args.length < parseResult.command.minArguments) {
