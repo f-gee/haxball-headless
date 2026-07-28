@@ -5,6 +5,7 @@ import * as balancing from './balancing'
 
 export interface Command {
 	name: string;
+	category: "chat" | "security" | "teams" | "utility" | "game";
 	helpStrings: string[];
 	minArguments: number;
 	cooldownSeconds: number;
@@ -32,6 +33,7 @@ export class CommandManager {
 		this.commands = {};
 		this.commandAliases = {
 			"ta": "toggle_admin",
+			"p": "pause",
 		};
 	}
 	// registerAlias(alias: string, name: string) {
@@ -121,7 +123,7 @@ export class CommandManager {
 } // class CommandManager
 export const commandManager = new CommandManager();
 commandManager.registerCommand({
-	name: "help", helpStrings: ["Get help"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false, execute: (player, args) => {
+	name: "help", category: "utility", helpStrings: ["Get help"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false, execute: (player, args) => {
 		if (args.length) { // .help [commandName]
 			const commandName = args[0];
 			let command = commandManager.commands[commandName];
@@ -146,14 +148,14 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "version", helpStrings: ["Get bot version"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
+	name: "version", category: "utility", helpStrings: ["Get bot version"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
 	execute: (player, args) => {
 		//util.pm(player, `Version: ${__BOT_VERSION__}`);
 		return { ok: true, info: `Version: ${__BOT_VERSION__}` };
 	}
 });
 commandManager.registerCommand({
-	name: "get", helpStrings: [".get [variableName]: shows the value of a parameter"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	name: "get", category: "utility", helpStrings: [".get [varName]: shows the value of a parameter", "possible values: captainmode, autobalance, forceequalteams, password, captcha"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: (player, args) => {
 		let targetVariable: any;
 		const variableName = args[0];
@@ -164,11 +166,16 @@ commandManager.registerCommand({
 			case "autobalance":
 				targetVariable = gameManager.autoBalance;
 				break;
+			case "et":
+			case "equalteams":
 			case "forceequalteams":
 				targetVariable = gameManager.forceEqualTeams;
 				break;
 			case "password":
 				targetVariable = gameManager.roomPassword;
+				break;
+			case "captcha":
+				targetVariable = gameManager.captcha;
 				break;
 			default:
 				return { ok: false, error: "Invalid variable name" };
@@ -177,7 +184,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "set", helpStrings: [".set [variableName] [value]: sets the value of a parameter"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	name: "set", category: "utility", helpStrings: [".set [varName] [value]: sets the value of a parameter", "for possible varNames: type .help get"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		let targetVariable: any;
 		const variableName = args[0];
@@ -191,6 +198,8 @@ commandManager.registerCommand({
 				gameManager.autoBalance = util.parseBoolean(newValue, true);
 				await balancing.balanceTeamsWithTimeout(500);
 				break;
+			case "et":
+			case "equalteams":
 			case "forceequalteams":
 				gameManager.forceEqualTeams = util.parseBoolean(newValue, false);
 				await balancing.balanceTeamsWithTimeout(500);
@@ -198,6 +207,10 @@ commandManager.registerCommand({
 			case "password":
 				const isPasswordOn = util.parseBoolean(newValue, false);
 				util.setRoomPassword(isPasswordOn ? newValue : null);
+				break;
+			case "captcha":
+				gameManager.captcha = util.parseBoolean(newValue, false);
+				room.setRequireRecaptcha(gameManager.captcha)
 				break;
 			default:
 				return { ok: false, error: "Invalid variable name" };
@@ -207,7 +220,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "admin", helpStrings: [".admin [password]: Get admin privileges"], minArguments: 1, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
+	name: "admin", category: "security", helpStrings: [".admin [password]: Get admin privileges"], minArguments: 1, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
 	execute: (player, args) => {
 		const passwordInput = args[0];
 		if (gameManager.adminPasswords.includes(passwordInput)) {
@@ -226,7 +239,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "promote", helpStrings: [".promote [player] admin / superadmin / dev: promote a player to admin"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	name: "promote", category: "security", helpStrings: [".promote [player] admin / superadmin / dev: promote a player to admin"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: (player, args) => {
 		const [playerQuery, rank] = args;
 		const targetPlayer = playerManager.getByQuery(playerQuery);
@@ -258,7 +271,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "demote", helpStrings: [".demote [player]: demote a player"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	name: "demote", category: "security", helpStrings: [".demote [player]: demote a player"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: (player, args) => {
 		const [playerQuery] = args;
 		const targetPlayer = playerManager.getByQuery(playerQuery);
@@ -290,7 +303,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "toggle_admin", helpStrings: [".toggle_admin: toggles your admin visibility", ".toggle_admin [player]: toggles admin visibility of another player"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
+	name: "toggle_admin", category: "security", helpStrings: [".toggle_admin: toggles your admin visibility", ".toggle_admin [player]: toggles admin visibility of another player"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
 	execute: (player, args) => {
 		let targetPlayer = player;
 		if (args.length) {
@@ -304,11 +317,90 @@ commandManager.registerCommand({
 		const vanillaPlayer: VanillaPlayer = room.getPlayer(targetPlayer.id);
 		if (!vanillaPlayer) return { ok: false, error: "Player not found" };
 		room.setPlayerAdmin(vanillaPlayer.id, !vanillaPlayer.admin);
-		return { ok: true, success: `${targetPlayer.name}'s admin visibility toggled` };
+		util.messageAdmins(`${targetPlayer.name}'s admin visibility toggled`);
+		return { ok: true };
+	}
+});
+// TODO: check for superAdmin etc for kick and ban
+commandManager.registerCommand({
+	name: "kick", category: "security", helpStrings: [".kick [player] [reason]: kicks a player"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: (player, args) => {
+		const target = playerManager.getByQuery(args[0]);
+		if (!target) return { ok: false, error: "Player not found" };
+		let reason = args.slice(1).join(" ");
+		if (!reason) { reason = `(${player.name})` };
+		room.kickPlayer(target.id, reason, false);
+		util.messageAdmins(`${player.name} kicked ${target.name}. Reason: ${reason}`);
+		return { ok: true };
 	}
 });
 commandManager.registerCommand({
-	name: "afk", helpStrings: [".afk: sets your afk status", ".afk [player]: sets another player's afk status"], minArguments: 0, cooldownSeconds: 10, needsAdmin: false, needsSuperAdmin: false,
+	name: "ban", category: "security", helpStrings: [".ban [player] [reason]: bans a player"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: (player, args) => {
+		const target = playerManager.getByQuery(args[0]);
+		if (!target) return { ok: false, error: "Player not found" };
+		let reason = args.slice(1).join(" ");
+		if (!reason) { reason = `(${player.name})` };
+		room.kickPlayer(target.id, reason, true);
+		util.messageAdmins(`${player.name} banned ${target.name}. Reason: ${reason}`);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "clearban", category: "security", helpStrings: [".clearban [id]: removes the ban for the given id", ".clearban all: removes all bans"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: (player, args) => {
+		if (args[0] === "all") {
+			room.clearBans();
+			util.messageAdmins(`${player.name} cleared all bans`);
+		} else {
+			const targetId = parseInt(args[0]);
+			if (isNaN(targetId)) { return { ok: false, error: "Invalid ID" } }
+			const targetBan = gameManager.recentBans.find(x => x.id === targetId);
+			if (!targetBan) { return { ok: false, error: `Ban with ID ${targetId} not found` } }
+			room.clearBan(targetBan.id);
+			util.messageAdmins(`${player.name} cleared ban for ${targetBan.name}`);
+		}
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "showban", category: "security", helpStrings: [".showban [id]: shows a specific ban", ".showban all [num]: shows last N bans"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: (player, args) => {
+		if (args[0] === "all") {
+			const numBans = parseInt(args[1]);
+			if (isNaN(numBans)) { return { ok: false, error: "Invalid number of bans" } }
+			if (numBans > 25) { return { ok: false, error: "Number of bans must be less than 25" } }
+			const recentBans = gameManager.recentBans.slice(0, numBans);
+			for (const ban of recentBans) {
+				util.pm(player, `(#${ban.id}) ${ban.name}, Reason: ${ban.reason}, Banned by: ${ban.by_name}`, "info");
+			}
+		} else {
+			const targetId = parseInt(args[0]);
+			if (isNaN(targetId)) { return { ok: false, error: "Invalid ID" } }
+			const targetBan = gameManager.recentBans.find(x => x.id === targetId);
+			if (!targetBan) { return { ok: false, error: `Ban with ID ${targetId} not found` } }
+			util.pm(player, `(#${targetBan.id}) ${targetBan.name}, Reason: ${targetBan.reason}, Banned by: ${targetBan.by_name}`, "info");
+		}
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "pause", category: "game", helpStrings: [".pause: pauses / unpauses the game"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		gameManager.isGamePaused = !gameManager.isGamePaused;
+		if (gameManager.isGamePaused) {
+			room.pauseGame(true);
+			util.say("Game paused by " + player.name);
+			return { ok: true };
+		} else {
+			room.pauseGame(false);
+			util.say("Game resumed by " + player.name);
+			return { ok: true };
+		}
+	}
+});
+commandManager.registerCommand({
+	name: "afk", category: "teams", helpStrings: [".afk: sets your afk status", ".afk [player]: sets another player's afk status"], minArguments: 0, cooldownSeconds: 10, needsAdmin: false, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		let targetPlayer = player;
 		if (args.length) {
@@ -331,7 +423,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "back", helpStrings: [".back: removes your afk status", ".back [player]: removes another player's afk status"], minArguments: 0, cooldownSeconds: 10, needsAdmin: false, needsSuperAdmin: false,
+	name: "back", category: "teams", helpStrings: [".back: removes your afk status", ".back [player]: removes another player's afk status"], minArguments: 0, cooldownSeconds: 10, needsAdmin: false, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		let targetPlayer = player;
 		if (args.length) {
@@ -353,13 +445,13 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "mix", helpStrings: [".mix: mixes the teams"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	name: "mix", category: "teams", helpStrings: [".mix: mixes the teams"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
-		playerManager.redTeam.forEach(async (p) => {
+		playerManager.red.forEach(async (p) => {
 			await playerManager.movePlayerToTeam(p, 0);
 			p.spectatingSince = new Date(Math.floor(Math.random() * 1000));
 		});
-		playerManager.blueTeam.forEach(async (p) => {
+		playerManager.blue.forEach(async (p) => {
 			await playerManager.movePlayerToTeam(p, 0);
 			p.spectatingSince = new Date(Math.floor(Math.random() * 1000));
 		});
@@ -369,22 +461,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "pause", helpStrings: [".pause: pauses / unpauses the game"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
-	execute: async (player, args) => {
-		gameManager.isGamePaused = !gameManager.isGamePaused;
-		if (gameManager.isGamePaused) {
-			room.pauseGame(true);
-			util.say("Game paused by " + player.name);
-			return { ok: true };
-		} else {
-			room.pauseGame(false);
-			util.say("Game resumed by " + player.name);
-			return { ok: true };
-		}
-	}
-});
-commandManager.registerCommand({
-	name: "red", helpStrings: [".red [player]: moves a player to red team"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	name: "red", category: "teams", helpStrings: [".red [player]: moves a player to red team"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		const targetPlayer = playerManager.getByQuery(args[0]);
 		if (!targetPlayer) return { ok: false, error: "Player not found" };
@@ -394,7 +471,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "blue", helpStrings: [".blue [player]: moves a player to blue team"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	name: "blue", category: "teams", helpStrings: [".blue [player]: moves a player to blue team"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		const targetPlayer = playerManager.getByQuery(args[0]);
 		if (!targetPlayer) return { ok: false, error: "Player not found" };
@@ -404,7 +481,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "spec", helpStrings: [".spec [player]: moves a player to spectator team"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	name: "spec", category: "teams", helpStrings: [".spec [player]: moves a player to spectator team"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		const targetPlayer = playerManager.getByQuery(args[0]);
 		if (!targetPlayer) return { ok: false, error: "Player not found" };
@@ -415,7 +492,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "mute", helpStrings: [".mute [player] [minutes]: mutes a player for N minutes"], minArguments: 2, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	name: "mute", category: "chat", helpStrings: [".mute [player] [minutes]: mutes a player for N minutes"], minArguments: 2, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
 	execute: (player, args) => {
 		const targetPlayer = playerManager.getByQuery(args[0]);
 		if (!targetPlayer) return { ok: false, error: "Player not found" };
@@ -427,7 +504,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "unmute", helpStrings: [".unmute [player]: unmutes a player"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	name: "unmute", category: "chat", helpStrings: [".unmute [player]: unmutes a player"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
 	execute: (player, args) => {
 		const targetPlayer = playerManager.getByQuery(args[0]);
 		if (!targetPlayer) return { ok: false, error: "Player not found" };
@@ -438,7 +515,7 @@ commandManager.registerCommand({
 });
 
 commandManager.registerCommand({
-	name: "muteall", helpStrings: [".muteall [minutes]: mutes everyone for N minutes"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	name: "muteall", category: "chat", helpStrings: [".muteall [minutes]: mutes everyone for N minutes"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
 	execute: (player, args) => {
 		const minutes = parseInt(args[0]);
 		if (isNaN(minutes) || minutes <= 0 || minutes > 30) return { ok: false, error: "Invalid minutes" };
@@ -451,7 +528,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "unmuteall", helpStrings: [".unmuteall: unmutes everyone"], minArguments: 0, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	name: "unmuteall", category: "chat", helpStrings: [".unmuteall: unmutes everyone"], minArguments: 0, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
 	execute: (player, args) => {
 		playerManager.all.forEach((p: Player) => {
 			if (p.isSuperAdmin) { return; }

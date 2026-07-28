@@ -11,6 +11,97 @@ export async function reorderSpecs() {
     await room.reorderPlayers(sortedSpecsArray.map(s => s.id), true);
 };
 
+export async function endGame(scores: { red: number, blue: number }) {
+    const winnerTeamId = scores.red > scores.blue ? 1 : 2;
+    const loserTeamId = 3 - winnerTeamId;
+    const winnerTeamName = winnerTeamId === 1 ? "red" : "blue";
+    const loserTeamName = loserTeamId === 1 ? "red" : "blue";
+    const winnerTeam = winnerTeamId === 1 ? playerManager.red : playerManager.blue;
+    const loserTeam = loserTeamId === 1 ? playerManager.red : playerManager.blue;
+    const msgColor = winnerTeamId === 1 ? 0xE56E56 : 0x5689E5;
+    let i, thisPlayer;
+
+    gameManager.victoryStreak[loserTeamName] = 0;
+    gameManager.victoryStreak[winnerTeamName]++;
+    if (gameManager.victoryStreak[winnerTeamName] > 1) {
+        room.sendAnnouncement(`${winnerTeamName} team is on a ${gameManager.victoryStreak[winnerTeamName]}-game winning streak!`, null, msgColor);
+    }
+    if (gameManager.mixMode === "None") {
+        return;
+    }
+    // calculate Elos
+    if (gameManager.isGameRanked) {
+        let winnersElo = 0, losersElo = 0, numPlayers = gameManager.teamCaps.red;
+        winnerTeam.forEach(p => {
+            winnersElo += p.elo;
+        });
+        loserTeam.forEach(p => {
+            losersElo += p.elo;
+        });
+        winnersElo = winnersElo / numPlayers;
+        losersElo = losersElo / numPlayers;
+        const winnersChanceToWin = 1 / (1 + Math.pow(10, (losersElo - winnersElo) / 400));
+        const eloChange = Math.round(32 * (1 - winnersChanceToWin));
+        winnerTeam.forEach(p => {
+            p.elo += eloChange;
+            util.pm(p, `You gained ${eloChange} Elo, your new score: ${p.elo}`);
+        });
+        loserTeam.forEach(p => {
+            p.elo -= eloChange;
+            util.pm(p, `You lost ${eloChange} Elo, your new score: ${p.elo}`);
+        });
+
+    }
+    const _now = Date.now();
+    // spec losers
+    loserTeam.forEach(async p => {
+        await playerManager.movePlayerToTeam(p, 0);
+        p.spectatingSince = new Date(_now + Math.random() * 100);
+        p.restoreTeam = 0;
+    });
+    const mixDueToWinStreak = (gameManager.maxVictoryStreak > 0 && (gameManager.victoryStreak[winnerTeamName] >= gameManager.maxVictoryStreak));
+    if (mixDueToWinStreak) {
+        util.say(`🏆 ${winnerTeamName} team is on a ${gameManager.victoryStreak[winnerTeamName]}-game winning streak, mixing teams`);
+        gameManager.victoryStreak.red = 0;
+        gameManager.victoryStreak.blue = 0;
+    }
+    if (gameManager.mixMode === "FullRandom") {
+        gameManager.victoryStreak.red = 0;
+        gameManager.victoryStreak.blue = 0;
+        // also spec winners
+        winnerTeam.forEach(async p => {
+            await playerManager.movePlayerToTeam(p, 0);
+            p.spectatingSince = new Date(_now + Math.random() * 100);
+            p.restoreTeam = 0;
+        });
+    } else if (mixDueToWinStreak || gameManager.mixMode === "WS_Random") {
+        // divide winners into two teams
+        const winnerTeam_array = Array.from(winnerTeam);
+        const numWinners = winnerTeam_array.length;
+        util.shuffleArray(winnerTeam_array);
+        for (let i = Math.floor(numWinners / 2); i >= 1; i--) {
+            const thisPlayer = winnerTeam_array.pop();
+            if (thisPlayer) await playerManager.movePlayerToTeam(thisPlayer, loserTeamId);
+        }
+    }
+    await reorderSpecs();
+    if (gameManager.mixMode !== "None") {
+        await balanceTeamsWithTimeout(500);
+    }
+    gameManager.gameEndAutoStart = true;
+    // handle AFK players:
+    playerManager.afks.forEach(afkPlayer => {
+        if (afkPlayer.isSuperAdmin) { return }
+        afkPlayer.afkGamesCount++;
+        if (afkPlayer.afkGamesCount > 4) {
+            room.kickPlayer(afkPlayer.id, "You have been AFK for 5 games.", false);
+        } else if (afkPlayer.afkGamesCount > 3) {
+            util.pm(afkPlayer, `${afkPlayer.name}, you've been AFK for 4 games, you will be kicked if you don't come back`, "warning");
+        }
+
+    })
+};
+
 export function balanceTeamsWithTimeout(duration: number): Promise<void> {
     if (gameManager.timers.balanceTimer) {
         clearTimeout(gameManager.timers.balanceTimer);
@@ -54,16 +145,16 @@ export async function balanceTeams() {
     //const totalActivePlayers = playerManager.redTeam.size + playerManager.blueTeam.size + orderedSpecsArray.length;
     const totalActivePlayers = playerManager.all.size - playerManager.afks.size;
     // first, remove any overflow
-    if (playerManager.redTeam.size > gameManager.teamCaps.red) {
-        let numToRemove = playerManager.redTeam.size - gameManager.teamCaps.red;
+    if (playerManager.red.size > gameManager.teamCaps.red) {
+        let numToRemove = playerManager.red.size - gameManager.teamCaps.red;
         //btLog(`red had too many players. speccing ${numToRemove} player(s) from red`);
-        const playersToRemove = [...playerManager.redTeam].slice(0, numToRemove);
+        const playersToRemove = [...playerManager.red].slice(0, numToRemove);
         playersToRemove.forEach(player => playerManager.movePlayerToTeam(player, 0));
     }
-    if (playerManager.blueTeam.size > gameManager.teamCaps.blue) {
-        let numToRemove = playerManager.blueTeam.size - gameManager.teamCaps.blue;
+    if (playerManager.blue.size > gameManager.teamCaps.blue) {
+        let numToRemove = playerManager.blue.size - gameManager.teamCaps.blue;
         //btLog(`blue had too many players. speccing ${numToRemove} player(s) from blue`);
-        const playersToRemove = [...playerManager.blueTeam].slice(0, numToRemove);
+        const playersToRemove = [...playerManager.blue].slice(0, numToRemove);
         playersToRemove.forEach(player => playerManager.movePlayerToTeam(player, 0));
     }
 
@@ -71,35 +162,35 @@ export async function balanceTeams() {
         return;
     }
     // now add specs
-    let numSpecsNeeded = Math.min(gameManager.teamCaps.red + gameManager.teamCaps.blue - (playerManager.redTeam.size + playerManager.blueTeam.size), orderedSpecsArray.length);
+    let numSpecsNeeded = Math.min(gameManager.teamCaps.red + gameManager.teamCaps.blue - (playerManager.red.size + playerManager.blue.size), orderedSpecsArray.length);
     //btLog(`numSpecsNeeded` + numSpecsNeeded + " totalActivePlayers" + totalActivePlayers + " redTeam.size" + playerManager.redTeam.size + " blueTeam.size" + playerManager.blueTeam.size);
     if (numSpecsNeeded > 0) {
         let targetTeam;
         const specs = orderedSpecsArray.slice(0, numSpecsNeeded);
         for (const spec of specs) {
-            if (numSpecsNeeded === 1 && totalActivePlayers > 1 && gameManager.forceEqualTeams && (playerManager.redTeam.size + playerManager.blueTeam.size) % 2 === 0) {
+            if (numSpecsNeeded === 1 && totalActivePlayers > 1 && gameManager.forceEqualTeams && (playerManager.red.size + playerManager.blue.size) % 2 === 0) {
                 //btLog(`skipping last spec (${_spec.name}) to keep teams even`);
                 break;
             }
-            targetTeam = playerManager.redTeam.size > playerManager.blueTeam.size ? 2 : (playerManager.redTeam.size < playerManager.blueTeam.size ? 1 : (spec.restoreTeam > 0 && totalActivePlayers > 1 ? spec.restoreTeam : gameManager.nextKickOffTeamId));
+            targetTeam = playerManager.red.size > playerManager.blue.size ? 2 : (playerManager.red.size < playerManager.blue.size ? 1 : (spec.restoreTeam > 0 && totalActivePlayers > 1 ? spec.restoreTeam : gameManager.nextKickOffTeamId));
             await playerManager.movePlayerToTeam(spec, targetTeam);
             numSpecsNeeded--;
         }
     }
     // all specs added. now handle big imbalances
-    while (Math.abs(playerManager.redTeam.size - playerManager.blueTeam.size) > 1) {
-        const fromTeam = playerManager.redTeam.size > playerManager.blueTeam.size ? 1 : 2;
+    while (Math.abs(playerManager.red.size - playerManager.blue.size) > 1) {
+        const fromTeam = playerManager.red.size > playerManager.blue.size ? 1 : 2;
         const toTeam = fromTeam === 1 ? 2 : 1;
-        const playerToMove = util.getRandomFromSet(fromTeam === 1 ? playerManager.redTeam : playerManager.blueTeam);
+        const playerToMove = util.getRandomFromSet(fromTeam === 1 ? playerManager.red : playerManager.blue);
         //btLog(`big imbalance. randomly picked ${playerToMove.name} from team ${fromTeam} to team ${toTeam}`);
         await playerManager.movePlayerToTeam(playerToMove, toTeam);
         util.debugLog(`${util.nameToMention(playerToMove.name)}, takımları dengelemek için ${toTeam === 1 ? "kırmızı" : "mavi"} takıma geçirildi`);
         util.pm(playerToMove, `${util.nameToMention(playerToMove.name)}, takımları dengelemek için ${toTeam === 1 ? "kırmızı" : "mavi"} takıma geçirildiniz!`);
     }
     // final check for forceEqualTeams
-    if (gameManager.forceEqualTeams && totalActivePlayers > 1 && playerManager.redTeam.size !== playerManager.blueTeam.size) {
-        const fromTeam = playerManager.redTeam.size > playerManager.blueTeam.size ? 1 : 2;
-        const playerToMove = util.getRandomFromSet(fromTeam === 1 ? playerManager.redTeam : playerManager.blueTeam);
+    if (gameManager.forceEqualTeams && totalActivePlayers > 1 && playerManager.red.size !== playerManager.blue.size) {
+        const fromTeam = playerManager.red.size > playerManager.blue.size ? 1 : 2;
+        const playerToMove = util.getRandomFromSet(fromTeam === 1 ? playerManager.red : playerManager.blue);
         //btLog(`forcing equal teams. it was ${teams[1].length}v${teams[2].length}. Moving ${playerToMove.name} to spec`);
         await playerManager.movePlayerToTeam(playerToMove, 0);
         playerToMove.restoreTeam = fromTeam;
@@ -130,7 +221,7 @@ export async function balanceTeams_withCaptainMode() {
     }
     // we have at least 4 active players. 
     // make sure both teams have captains:
-    if ((!playerManager.redTeam.size) && (!playerManager.blueTeam.size)) { // special case, mix first two specs
+    if ((!playerManager.red.size) && (!playerManager.blue.size)) { // special case, mix first two specs
         let firstTwoSpecs = [...playerManager.activeSpectators].slice(0, 2);
         //bcLog(`Both teams were missing captains, first two specs (${firstTwoSpecs.map(x => x.name).join(" and ")}) will be shuffled`);
         util.shuffleArray(firstTwoSpecs);
@@ -138,13 +229,13 @@ export async function balanceTeams_withCaptainMode() {
         await playerManager.movePlayerToTeam(firstTwoSpecs[1], 2);
     } else {
         let firstSpec;
-        if (!playerManager.redTeam.size) {
+        if (!playerManager.red.size) {
             firstSpec = playerManager.activeSpectators.values().next().value;
             if (firstSpec) {
                 await playerManager.movePlayerToTeam(firstSpec, 1);
             }
         }
-        if (!playerManager.blueTeam.size) {
+        if (!playerManager.blue.size) {
             firstSpec = playerManager.activeSpectators.values().next().value;
             if (firstSpec) {
                 await playerManager.movePlayerToTeam(firstSpec, 2);
@@ -155,29 +246,29 @@ export async function balanceTeams_withCaptainMode() {
     // check for auto actions:
     // overflow:
     {
-        if (playerManager.redTeam.size > gameManager.teamCaps.red) {
-            const redSurplus = playerManager.redTeam.size - gameManager.teamCaps.red;
+        if (playerManager.red.size > gameManager.teamCaps.red) {
+            const redSurplus = playerManager.red.size - gameManager.teamCaps.red;
             for (let i = 0; i < redSurplus; i++) {
-                const playerToMove = playerManager.redTeam.values().next().value;
+                const playerToMove = playerManager.red.values().next().value;
                 if (playerToMove) {
                     await playerManager.movePlayerToTeam(playerToMove, 0);
                 }
             }
         }
-        if (playerManager.blueTeam.size > gameManager.teamCaps.blue) {
+        if (playerManager.blue.size > gameManager.teamCaps.blue) {
             //bcLog(`Blue has too many players:`);
-            const blueSurplus = playerManager.blueTeam.size - gameManager.teamCaps.blue;
+            const blueSurplus = playerManager.blue.size - gameManager.teamCaps.blue;
             for (let i = 0; i < blueSurplus; i++) {
-                const playerToMove = playerManager.blueTeam.values().next().value;
+                const playerToMove = playerManager.blue.values().next().value;
                 if (playerToMove) {
                     await playerManager.movePlayerToTeam(playerToMove, 0);
                 }
             }
         }
     }
-    let redSurplus = playerManager.redTeam.size - playerManager.blueTeam.size;
+    let redSurplus = playerManager.red.size - playerManager.blue.size;
     let absSurplus = Math.abs(redSurplus);
-    let totalNeed = gameManager.teamCaps.red + gameManager.teamCaps.blue - (playerManager.redTeam.size + playerManager.blueTeam.size);
+    let totalNeed = gameManager.teamCaps.red + gameManager.teamCaps.blue - (playerManager.red.size + playerManager.blue.size);
     if (absSurplus === 0 && playerManager.activeSpectators.size === 0) {
         //bcLog(`Teams are equal and no specs left. Starting game..`);
         if (gameManager.gameEndAutoStart || !gameManager.timers.startTimer) { gameManager.timers.startTimer = setTimeout(room.startGame, 1000); }
@@ -221,8 +312,8 @@ export async function balanceTeams_withCaptainMode() {
     const bigTeamId = 3 - smallTeamId;
     const bigTeamName = bigTeamId === 1 ? "red" : "blue";
     const smallTeamName = smallTeamId === 1 ? "red" : "blue";
-    const bigTeam = bigTeamId === 1 ? playerManager.redTeam : playerManager.blueTeam;
-    const smallTeam = smallTeamId === 1 ? playerManager.redTeam : playerManager.blueTeam;
+    const bigTeam = bigTeamId === 1 ? playerManager.red : playerManager.blue;
+    const smallTeam = smallTeamId === 1 ? playerManager.red : playerManager.blue;
     // if num specs == num need for one team, and the other team is full:
     if ((bigTeam.size === gameManager.teamCaps[bigTeamName] && playerManager.activeSpectators.size === totalNeed) // 4v2
         || (bigTeam.size === smallTeam.size + playerManager.activeSpectators.size)) // 3v1
@@ -250,7 +341,7 @@ export async function balanceTeams_withCaptainMode() {
         }
     }
     // check if teams are perfect:
-    if (playerManager.redTeam.size === gameManager.teamCaps.red && playerManager.blueTeam.size === gameManager.teamCaps.blue) {
+    if (playerManager.red.size === gameManager.teamCaps.red && playerManager.blue.size === gameManager.teamCaps.blue) {
         if (gameManager.gameEndAutoStart || !gameManager.timers.startTimer) { gameManager.timers.startTimer = setTimeout(room.startGame, 1000); }
         if (gameManager.isGamePaused /*&& (!data.miscStuff.manualUnpauseTimer)*/) { room.pauseGame(false); }
         gameManager.lastTeamThatPicked = 2;
@@ -283,7 +374,7 @@ export function clearCaptainPrompt() {
     if (gameManager.timers.captainPickInterval) clearInterval(gameManager.timers.captainPickInterval);
 }
 export function promptCaptain(teamId: number) {
-    const captain = teamId === 1 ? playerManager.redTeam.values().next().value : playerManager.blueTeam.values().next().value;
+    const captain = teamId === 1 ? playerManager.red.values().next().value : playerManager.blue.values().next().value;
     if (!captain) { return }
     room.pauseGame(true);
     util.pm(captain, `${captain.name}, oyuncu seçme sırası sizde! İsim ya da sayı yazabilirsiniz`);

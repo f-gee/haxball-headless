@@ -115,6 +115,21 @@ room.onGameStop = async (byPlayer: VanillaPlayer) => {
     // }
     //await playerStorage.batchUpdatePlayers();
 };
+room.onTeamVictory = async (_scores: { red: number, blue: number }) => {
+    //util.debugLog("onTeamVictory");
+    room.stopGame();
+    if (gameManager.timers.startTimer) clearTimeout(gameManager.timers.startTimer);
+    gameManager.timers.startTimer = null;
+    // if (gameManager.isTrackingAFKs) {
+    // 	clearInterval(gameManager.timers.AfkTrackingInterval);
+    // }
+    await balancing.endGame(_scores);
+    if (!gameManager.captainMode) {
+        const nSeconds = (gameManager.mixMode === "None") ? 60 : 5;
+        //util.say(`Yeni oyun ${nSeconds} saniye sonra başlayacak`);
+        gameManager.timers.startTimer = setTimeout(room.startGame, nSeconds * 1000);
+    }
+};
 
 room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
     if (!util.validatePlayer(vanillaPlayer)) {
@@ -139,7 +154,8 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
         commandCooldownUntil: now,
         chatMutedUntil: now,
         chatLastTimestamp: now,
-        chatSpamTickets: 0
+        chatSpamTickets: 0,
+        afkGamesCount: 0
     };
     playerManager.addPlayer(player);
     const foundAdmin = gameManager.savedAdminAuths.data.find((a: { auth: string; }) => a.auth === vanillaPlayer.auth);
@@ -160,6 +176,16 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
 room.onPlayerLeave = async (vanillaPlayer: VanillaPlayer) => {
     playerManager.removePlayer(vanillaPlayer.id);
     await balancing.balanceTeamsWithTimeout(1000);
+};
+room.onPlayerKicked = (vanillaPlayer: VanillaPlayer, reason: string, ban: boolean, byPlayer?: any) => {
+    if (!byPlayer) { byPlayer = { id: 0, name: "bot" } }
+    if (ban) {
+        reason = "" + reason;
+        gameManager.recentBans.push({ id: vanillaPlayer.id, name: vanillaPlayer.name, reason: reason, by_name: byPlayer.name });
+        if (gameManager.recentBans.length > 30) { gameManager.recentBans.splice(0, 1) }
+        util.messageAdmins(`${vanillaPlayer.name} was kicked by ${byPlayer.name} (Reason: ${reason})`);
+        util.messageAdmins(`To remove ban: .clearban ${vanillaPlayer.id}`);
+    }
 };
 room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
     const player = playerManager.all.get(vanillaPlayer.id);

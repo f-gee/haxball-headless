@@ -18,16 +18,22 @@ export class GameManager {
     public teamCaps: { red: number, blue: number, spec: number } = { red: 4, blue: 4, spec: 99 };
     public autoBalance: boolean = true;
     public forceEqualTeams: boolean = false;
+    public mixMode: string = "WinnerStays";// "WinnerStays" | "WinnerStays_Random" | "FullRandom" | "None" = "WinnerStays";
+    public victoryStreak: { red: number, blue: number } = { red: 0, blue: 0 };
+    public maxVictoryStreak: number = 10;
+    public isGameRanked: boolean = false;
     public nextKickOffTeamId: number = 1;
     public isGamePaused: boolean = false;
     public isGameGoingOn: boolean = false;
     public gameEndAutoStart: boolean = false;
     public autoPasswordCapacity: number = 11;
     public roomPassword: string | null = null;
+    public captcha: boolean = false;
     public captainMode: boolean = true;
     public captainPromptObj: { teamId: number, captainId: number, secondsRemaining: number } = { teamId: 1, captainId: 0, secondsRemaining: 0 };
     public lastTeamThatPicked: number = 2;
     public isCaptainPickingActive: boolean = false;
+    public recentBans: { id: number, name: string, reason: string, by_name: string }[] = [];
 
     public timers: {
         afkTimer: ReturnType<typeof setTimeout> | null;

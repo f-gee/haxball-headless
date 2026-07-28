@@ -19,6 +19,7 @@ export interface Player {
     chatMutedUntil: Date;
     chatLastTimestamp: Date;
     chatSpamTickets: number;
+    afkGamesCount: number;
 }
 export interface VanillaPlayer {
     id: number;
@@ -34,8 +35,8 @@ class PlayerManager {
     public afks = new Set<Player>();
     public spectators = new Set<Player>();
     public activeSpectators = new Set<Player>();
-    public redTeam = new Set<Player>();
-    public blueTeam = new Set<Player>();
+    public red = new Set<Player>();
+    public blue = new Set<Player>();
     public admins = new Set<Player>();
     public superAdmins = new Set<Player>();
     public developers = new Set<Player>();
@@ -92,8 +93,8 @@ class PlayerManager {
             if (player.isAfk) this.afks.add(player);
             else this.activeSpectators.add(player);
         }
-        else if (team === 1) this.redTeam.add(player);
-        else if (team === 2) this.blueTeam.add(player);
+        else if (team === 1) this.red.add(player);
+        else if (team === 2) this.blue.add(player);
     }
     private removeFromTeamSet(player: Player, team: number) {
         if (team === 0) {
@@ -101,8 +102,8 @@ class PlayerManager {
             this.activeSpectators.delete(player);
             this.afks.delete(player);
         } else {
-            if (team === 1) this.redTeam.delete(player);
-            if (team === 2) this.blueTeam.delete(player);
+            if (team === 1) this.red.delete(player);
+            if (team === 2) this.blue.delete(player);
 
         }
     }
