@@ -58,5 +58,5 @@ util.fetchData(null, "admins");
 util.fetchData(null, "stadiums");
 util.fetchData(null, "kits");
 //export const room = gameManager.createRoom({ token: "thr1.AAAAAGplNWKzi8IBjALfQA.NF8XCsCSbvY" });
-const room = gameManager.createRoom(process.env.HAXBALL_ENV === "puppeteer" ? { token: (window as any).HB_TOKEN } : process.env.NODE_ENV === "development" ? { token: process.env.DEV_HB_TOKEN } : {});
+const room = gameManager.createRoom(process.env.HAXBALL_ENV === "puppeteer" ? { token: (window as any).HB_TOKEN } : process.env.HAXBALL_ENV === "node" ? { token: process.env.DEV_HB_TOKEN } : {});
 export { room };
