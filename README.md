@@ -37,6 +37,7 @@ DEV_HB_TOKEN=thr1.haxballToken
   - `node dist/bundle.node_dev.js`
 ### In your own browser:
   - Copy and paste `dist/bundle.browser.js` to your browser's console
+  - If you use `dist/bundle.browser_dev.js`, it reads the token from .env file, if not, solve the captcha if prompted
 
 ## TODO
 - Write example JSON data files

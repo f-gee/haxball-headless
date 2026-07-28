@@ -372,19 +372,14 @@ export async function captainHandleChoice(player: Player, message: string) {
         } else {
             return util.pm(player, `Geçersiz sayı. En alttaki oyuncular AFK olabilir.`, "error");
         }
-    } else { // if they name-picked an AFK:
-        targetPlayer = playerManager.getByQuery(message);
-        if (targetPlayer) {
-            if (targetPlayer.team === 3) {
-                return util.pm(player, `${targetPlayer.name} AFK`, "error");
-            } else {
-                return util.pm(player, `${targetPlayer.name} ${targetPlayer.team === 2 ? "mavi" : "kırmızı"} takımda`, "error");
-            }
-        }
     }
-
     if (targetPlayer) {
-        if (targetPlayer.team !== 0) { return util.pm(player, "Seçtiğiniz oyuncu zaten takımda", "error"); }
+        if (targetPlayer.isAfk) {
+            return util.pm(player, `${targetPlayer.name} AFK`, "error");
+        }
+        if (targetPlayer.team !== 0) {
+            return util.pm(player, `${targetPlayer.name} ${targetPlayer.team === 2 ? "mavi" : "kırmızı"} takımda`, "error");
+        }
         await playerManager.movePlayerToTeam(targetPlayer, player.team)
         targetPlayer.restoreTeam = 0;
         gameManager.lastTeamThatPicked = player.team;

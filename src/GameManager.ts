@@ -24,7 +24,7 @@ export class GameManager {
     public gameEndAutoStart: boolean = false;
     public autoPasswordCapacity: number = 11;
     public roomPassword: string | null = null;
-    public captainMode: boolean = false;
+    public captainMode: boolean = true;
     public captainPromptObj: { teamId: number, captainId: number, secondsRemaining: number } = { teamId: 1, captainId: 0, secondsRemaining: 0 };
     public lastTeamThatPicked: number = 2;
     public isCaptainPickingActive: boolean = false;
@@ -40,6 +40,7 @@ export class GameManager {
     } = { afkTimer: null, balanceTimer: null, captainPickInterval: null, startTimer: null, unpauseTimer: null, pendingPromise: null, resolvePending: null }
 
     constructor(roomParams: any) {
+        console.log(`room is ${roomParams.public ? "public" : "private"}`);
         this.roomParams = roomParams;
     }
 

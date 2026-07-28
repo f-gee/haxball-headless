@@ -10,7 +10,7 @@ export interface Command {
 	cooldownSeconds: number;
 	needsAdmin: boolean;
 	needsSuperAdmin: boolean;
-	execute: (player: Player, args: string[]) => CommandResult | Promise<CommandResult>;
+	execute: (player: Player, args: string[]) => CommandResult | Promise<CommandResult>; // sync | async
 
 }
 interface CommandParseResult {
@@ -21,8 +21,8 @@ interface CommandParseResult {
 	args: string[];
 }
 export type CommandResult =
-	| { ok: true; message?: string; error?: any, success?: any, info?: string, warning?: string }
-	| { ok: false; message?: string; error?: string; needsHelp?: boolean, success?: any, info?: string, warning?: string };
+	| { ok: true; success?: any, info?: string, warning?: string }
+	| { ok: false; error?: string; needsHelp?: boolean, success?: any, info?: string, warning?: string };
 
 export class CommandManager {
 	//public commands: Command[];
@@ -97,30 +97,24 @@ export class CommandManager {
 			return;
 		}
 		const result = await this.executeCommand(parseResult);
-		if (result.ok) {
-			if (result.message) {
-				util.pm(player, result.message);
-			}
-		} else {
+		console.log("commandResult = " + util.variableToString(result));
+		if (!result.ok) {
 			if (result.error) {
 				util.pm(player, result.error, "error");
-			}
-			if (result.warning) {
-				util.pm(player, result.warning, "warning");
-			}
-			if (result.info) {
-				util.pm(player, result.info, "info");
-			}
-			if (result.success) {
-				util.pm(player, result.success, "success");
-			}
-			if (result.message) {
-				util.pm(player, result.message);
 			}
 			if (result.needsHelp) {
 				const commandName = parseResult.command?.name || "";
 				util.pm(player, `For help type .help ${commandName}`, "error");
 			}
+		}
+		if (result.warning) {
+			util.pm(player, result.warning, "warning");
+		}
+		if (result.info) {
+			util.pm(player, result.info, "info");
+		}
+		if (result.success) {
+			util.pm(player, result.success, "success");
 		}
 	}
 
@@ -155,27 +149,61 @@ commandManager.registerCommand({
 	name: "version", helpStrings: ["Get bot version"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
 	execute: (player, args) => {
 		//util.pm(player, `Version: ${__BOT_VERSION__}`);
-		return { ok: true, message: `Version: ${__BOT_VERSION__}` };
+		return { ok: true, info: `Version: ${__BOT_VERSION__}` };
 	}
 });
 commandManager.registerCommand({
-	name: "getparam", helpStrings: [".getparam [moduleName] [variableName]"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
+	name: "get", helpStrings: [".get [variableName]: shows the value of a parameter"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: (player, args) => {
-		let targetModule: any, targetVariable: any, outMessage: any;
-		const moduleName = args[0];
-		const variableName = args[1];
-		switch (moduleName) {
-			case "commandManager":
-				targetModule = commandManager;
+		let targetVariable: any;
+		const variableName = args[0];
+		switch (variableName) {
+			case "captainmode":
+				targetVariable = gameManager.captainMode;
 				break;
-			case "gameManager":
-				targetModule = gameManager;
+			case "autobalance":
+				targetVariable = gameManager.autoBalance;
+				break;
+			case "forceequalteams":
+				targetVariable = gameManager.forceEqualTeams;
+				break;
+			case "password":
+				targetVariable = gameManager.roomPassword;
 				break;
 			default:
-				return { ok: false, error: "Invalid module name" };
+				return { ok: false, error: "Invalid variable name" };
 		}
-		targetVariable = targetModule[variableName];
-		return { ok: true, info: `Value: ${targetVariable}` };
+		return { ok: true, info: `${variableName}: ${util.variableToString(targetVariable)}` };
+	}
+});
+commandManager.registerCommand({
+	name: "set", helpStrings: [".set [variableName] [value]: sets the value of a parameter"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		let targetVariable: any;
+		const variableName = args[0];
+		const newValue = args[1];
+		switch (variableName) {
+			case "captainmode":
+				gameManager.captainMode = util.parseBoolean(newValue, false);
+				await balancing.balanceTeamsWithTimeout(500);
+				break;
+			case "autobalance":
+				gameManager.autoBalance = util.parseBoolean(newValue, true);
+				await balancing.balanceTeamsWithTimeout(500);
+				break;
+			case "forceequalteams":
+				gameManager.forceEqualTeams = util.parseBoolean(newValue, false);
+				await balancing.balanceTeamsWithTimeout(500);
+				break;
+			case "password":
+				const isPasswordOn = util.parseBoolean(newValue, false);
+				util.setRoomPassword(isPasswordOn ? newValue : null);
+				break;
+			default:
+				return { ok: false, error: "Invalid variable name" };
+		}
+		util.messageAdmins(`${player.name} set ${variableName} = ${util.variableToString(targetVariable)}`);
+		return { ok: true };
 	}
 });
 commandManager.registerCommand({
@@ -332,7 +360,7 @@ commandManager.registerCommand({
 			p.spectatingSince = new Date(Math.floor(Math.random() * 1000));
 		});
 		playerManager.blueTeam.forEach(async (p) => {
-			await playerManager.movePlayerToTeam(p, 1);
+			await playerManager.movePlayerToTeam(p, 0);
 			p.spectatingSince = new Date(Math.floor(Math.random() * 1000));
 		});
 		await balancing.balanceTeamsWithTimeout(1000);
@@ -353,5 +381,83 @@ commandManager.registerCommand({
 			util.say("Game resumed by " + player.name);
 			return { ok: true };
 		}
+	}
+});
+commandManager.registerCommand({
+	name: "red", helpStrings: [".red [player]: moves a player to red team"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		const targetPlayer = playerManager.getByQuery(args[0]);
+		if (!targetPlayer) return { ok: false, error: "Player not found" };
+		await playerManager.movePlayerToTeam(targetPlayer, 1);
+		await balancing.balanceTeamsWithTimeout(500);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "blue", helpStrings: [".blue [player]: moves a player to blue team"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		const targetPlayer = playerManager.getByQuery(args[0]);
+		if (!targetPlayer) return { ok: false, error: "Player not found" };
+		await playerManager.movePlayerToTeam(targetPlayer, 2);
+		await balancing.balanceTeamsWithTimeout(500);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "spec", helpStrings: [".spec [player]: moves a player to spectator team"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		const targetPlayer = playerManager.getByQuery(args[0]);
+		if (!targetPlayer) return { ok: false, error: "Player not found" };
+		await playerManager.movePlayerToTeam(targetPlayer, 0);
+		targetPlayer.spectatingSince = new Date();
+		await balancing.balanceTeamsWithTimeout(500);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "mute", helpStrings: [".mute [player] [minutes]: mutes a player for N minutes"], minArguments: 2, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	execute: (player, args) => {
+		const targetPlayer = playerManager.getByQuery(args[0]);
+		if (!targetPlayer) return { ok: false, error: "Player not found" };
+		const minutes = parseInt(args[1]);
+		if (isNaN(minutes) || minutes <= 0 || minutes > 30) return { ok: false, error: "Invalid minutes" };
+		targetPlayer.chatMutedUntil = new Date(Date.now() + minutes * 60 * 1000);
+		util.say(`🔕 ${targetPlayer.name} is muted for ${minutes} minutes by ${player.name}`);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "unmute", helpStrings: [".unmute [player]: unmutes a player"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	execute: (player, args) => {
+		const targetPlayer = playerManager.getByQuery(args[0]);
+		if (!targetPlayer) return { ok: false, error: "Player not found" };
+		targetPlayer.chatMutedUntil = new Date(0);
+		util.say(`✅ ${targetPlayer.name} is unmuted by ${player.name}`);
+		return { ok: true };
+	}
+});
+
+commandManager.registerCommand({
+	name: "muteall", helpStrings: [".muteall [minutes]: mutes everyone for N minutes"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	execute: (player, args) => {
+		const minutes = parseInt(args[0]);
+		if (isNaN(minutes) || minutes <= 0 || minutes > 30) return { ok: false, error: "Invalid minutes" };
+		playerManager.all.forEach((p: Player) => {
+			if (p.isSuperAdmin) { return; }
+			p.chatMutedUntil = new Date(Date.now() + minutes * 60 * 1000);
+		});
+		util.say(`🔕 Everyone is muted for ${minutes} minutes by ${player.name}`);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "unmuteall", helpStrings: [".unmuteall: unmutes everyone"], minArguments: 0, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	execute: (player, args) => {
+		playerManager.all.forEach((p: Player) => {
+			if (p.isSuperAdmin) { return; }
+			p.chatMutedUntil = new Date(0);
+		});
+		util.say(`✅ Everyone is unmuted by ${player.name}`);
+		return { ok: true };
 	}
 });

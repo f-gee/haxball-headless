@@ -38,7 +38,25 @@ export function debugLog(message?: unknown) {
     console.log(outputMsg);
     playerManager.developers.forEach(p => room.sendAnnouncement(outputMsg, p.id, Config.colors.gold));
 }
-
+export function parseTrue(str: string) { return ["1", "on", "yes", "y", "true"].includes(str); }
+export function parseFalse(str: string) { return ["0", "off", "no", "n", "false", "null"].includes(str); }
+export function parseBoolean(str: string, defaultTo = false) { if (defaultTo === false) { return parseTrue(str) ? true : false } else { return parseFalse(str) ? false : true } }
+export function variableToString(variable: any): string {
+    switch (typeof variable) {
+        case "boolean":
+            return variable ? "✔️ true" : "❌ false";
+        case "number":
+            return variable === Infinity ? "∞ Infinity" : `🔢 ${variable}`;
+        case "string":
+            return `"${variable}"`;
+        case "undefined":
+            return "⚠️ undefined";
+        case "object":
+            return `📦 ${JSON.stringify(variable)}`;
+        default:
+            return String(variable);
+    }
+}
 export function messageAdmins(message: string) {
     if (!playerManager.admins.size) { return }
     message = "[Admins] " + message;
