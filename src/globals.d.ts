@@ -20,6 +20,7 @@ declare const process: {
         STADIUMS_URL: string;
         KITS_URL: string;
         DEV_HB_TOKEN: string;
+        HB_ROOM_NAME: string;
     };
 };
 

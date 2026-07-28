@@ -59,7 +59,7 @@ export class GameManager {
     }
 }
 // roomName: string = "Haxball Room", maxPlayers: number = 12, isPublic: boolean = false
-export const gameManager = new GameManager({ roomName: "Haxball Room", maxPlayers: 14, public: process.env.NODE_ENV === "development" ? false : true, noPlayer: true });
+export const gameManager = new GameManager({ roomName: process.env.HB_ROOM_NAME, maxPlayers: 14, public: process.env.NODE_ENV === "development" ? false : true, noPlayer: true });
 util.fetchData(null, "admins");
 util.fetchData(null, "stadiums");
 util.fetchData(null, "kits");
