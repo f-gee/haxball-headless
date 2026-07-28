@@ -1,4 +1,4 @@
-import * as util from "./util";
+import { util } from "./util";
 import { room } from "./GameManager";
 export interface Player {
     team: number;

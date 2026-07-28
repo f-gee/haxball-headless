@@ -21,6 +21,7 @@ DISCORD_CHATLOGS_URL=https://discord.com/api/webhooks/[webhookId]/[token]?thread
 SAVED_ADMIN_AUTHS_URL=https://yourfile.json
 STADIUMS_URL=https://yourfile.json
 KITS_URL=https://yourfile.json
+HB_ROOM_NAME=My Haxball Room
 DEV_HB_TOKEN=thr1.haxballToken
 ```
 

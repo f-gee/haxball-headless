@@ -1,4 +1,4 @@
-import * as util from "./util";
+import { util } from "./util";
 
 interface SavedAdminData {
     level: string;
@@ -52,17 +52,27 @@ export class GameManager {
 
     createRoom(extraParams: any = {}): any {
         Object.assign(this.roomParams, extraParams);
-        const token = extraParams.token || null;
+        //const token = extraParams.token || null;
+        let token = null;
+        if (process.env.HAXBALL_ENV === "puppeteer") {
+            token = (window as any).HB_TOKEN;
+        } else if (process.env.HAXBALL_ENV === "node" || process.env.HAXBALL_ENV === "browser") {
+            token = process.env.DEV_HB_TOKEN;
+        }
+        if (token) {
+            this.roomParams.token = token;
+        }
         console.log(`calling HBInit with token: ${token}`);
         const room = HBInit(this.roomParams);
         return room;
     }
 }
 // roomName: string = "Haxball Room", maxPlayers: number = 12, isPublic: boolean = false
-export const gameManager = new GameManager({ roomName: process.env.HB_ROOM_NAME, maxPlayers: 14, public: process.env.NODE_ENV === "development" ? false : true, noPlayer: true });
+export const gameManager = new GameManager({ roomName: process.env.HB_ROOM_NAME || "Haxball Room", maxPlayers: 14, public: process.env.NODE_ENV === "development" ? false : true, noPlayer: true });
 util.fetchData(null, "admins");
 util.fetchData(null, "stadiums");
 util.fetchData(null, "kits");
 //export const room = gameManager.createRoom({ token: "thr1.AAAAAGplNWKzi8IBjALfQA.NF8XCsCSbvY" });
-const room = gameManager.createRoom(process.env.HAXBALL_ENV === "puppeteer" ? { token: (window as any).HB_TOKEN } : process.env.HAXBALL_ENV === "node" ? { token: process.env.DEV_HB_TOKEN } : {});
+//const room = gameManager.createRoom((process.env.HAXBALL_ENV === "puppeteer" || process.env.HAXBALL_ENV === "browser") ? { token: (window as any).HB_TOKEN } : process.env.HAXBALL_ENV === "node" ? { token: process.env.DEV_HB_TOKEN } : {});
+const room = gameManager.createRoom();
 export { room };

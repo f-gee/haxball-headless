@@ -1,8 +1,8 @@
 import { room, gameManager } from './GameManager';
 import { commandManager } from './CommandManager';
 import { VanillaPlayer, Player, playerManager } from './PlayerManager';
-import * as util from './util';
-import * as balancing from './balancing';
+import { balancing } from "./balancing";
+import { util } from "./util";
 
 room.setDefaultStadium("Hockey");
 room.startGame();

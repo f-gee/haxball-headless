@@ -1,7 +1,8 @@
 import { gameManager, room } from "./GameManager";
-import * as util from "./util";
+import { util } from "./util";
 import { playerManager, Player, VanillaPlayer } from "./PlayerManager";
-import * as balancing from './balancing'
+//import * as balancing from './balancing'
+import { balancing } from "./balancing";
 
 export interface Command {
 	name: string;
@@ -34,6 +35,8 @@ export class CommandManager {
 		this.commandAliases = {
 			"ta": "toggle_admin",
 			"p": "pause",
+			"r": "red",
+			"b": "blue",
 		};
 	}
 	// registerAlias(alias: string, name: string) {
@@ -123,7 +126,7 @@ export class CommandManager {
 } // class CommandManager
 export const commandManager = new CommandManager();
 commandManager.registerCommand({
-	name: "help", category: "utility", helpStrings: ["Get help"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false, execute: (player, args) => {
+	name: "help", category: "utility", helpStrings: [".help: show all commands", ".help [command]: show info about a specific command"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false, execute: (player, args) => {
 		if (args.length) { // .help [commandName]
 			const commandName = args[0];
 			let command = commandManager.commands[commandName];
@@ -148,7 +151,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "version", category: "utility", helpStrings: ["Get bot version"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
+	name: "version", category: "utility", helpStrings: ["Display bot version"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
 	execute: (player, args) => {
 		//util.pm(player, `Version: ${__BOT_VERSION__}`);
 		return { ok: true, info: `Version: ${__BOT_VERSION__}` };
@@ -158,8 +161,8 @@ commandManager.registerCommand({
 	name: "get", category: "utility", helpStrings: [".get [varName]: shows the value of a parameter", "possible values: captainmode, autobalance, forceequalteams, password, captcha"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: (player, args) => {
 		let targetVariable: any;
-		const variableName = args[0];
-		switch (variableName) {
+		let varName = args[0];
+		switch (varName) {
 			case "captainmode":
 				targetVariable = gameManager.captainMode;
 				break;
@@ -177,19 +180,38 @@ commandManager.registerCommand({
 			case "captcha":
 				targetVariable = gameManager.captcha;
 				break;
+			case "team":
+				switch (args[1]) {
+					case "red":
+						targetVariable = Array.from(playerManager.red).map(p => p.name).join(", ");
+						break;
+					case "blue":
+						targetVariable = Array.from(playerManager.blue).map(p => p.name).join(", ");
+						break;
+					case "spec":
+						targetVariable = Array.from(playerManager.spectators).map(p => p.name).join(", ");
+						break;
+					case "afk":
+						targetVariable = Array.from(playerManager.afks).map(p => p.name).join(", ");
+						break;
+					default:
+						return { ok: false, error: "Invalid team name. Use red, blue or spec." };
+				}
+				varName = args[1];
+				break;
 			default:
 				return { ok: false, error: "Invalid variable name" };
 		}
-		return { ok: true, info: `${variableName}: ${util.variableToString(targetVariable)}` };
+		return { ok: true, info: `${varName}: ${util.variableToString(targetVariable)}` };
 	}
 });
 commandManager.registerCommand({
 	name: "set", category: "utility", helpStrings: [".set [varName] [value]: sets the value of a parameter", "for possible varNames: type .help get"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		let targetVariable: any;
-		const variableName = args[0];
+		const varName = args[0];
 		const newValue = args[1];
-		switch (variableName) {
+		switch (varName) {
 			case "captainmode":
 				gameManager.captainMode = util.parseBoolean(newValue, false);
 				await balancing.balanceTeamsWithTimeout(500);
@@ -215,7 +237,7 @@ commandManager.registerCommand({
 			default:
 				return { ok: false, error: "Invalid variable name" };
 		}
-		util.messageAdmins(`${player.name} set ${variableName} = ${util.variableToString(targetVariable)}`);
+		util.messageAdmins(`${player.name} set ${varName} = ${util.variableToString(targetVariable)}`);
 		return { ok: true };
 	}
 });
@@ -417,7 +439,7 @@ commandManager.registerCommand({
 			await playerManager.setAfk(targetPlayer, true);
 			util.say(`${targetPlayer.name} is now AFK`);
 			//await balancing.reorderSpecs();
-			await balancing.balanceTeamsWithTimeout(1000);
+			await balancing.balanceTeamsWithTimeout(500);
 			return { ok: true };
 		}
 	}
@@ -439,7 +461,7 @@ commandManager.registerCommand({
 		} else {
 			await playerManager.setAfk(targetPlayer, false);
 			util.say(`${targetPlayer.name} is no longer AFK`);
-			await balancing.balanceTeamsWithTimeout(1000);
+			await balancing.balanceTeamsWithTimeout(500);
 			return { ok: true };
 		}
 	}

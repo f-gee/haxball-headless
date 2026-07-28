@@ -15,6 +15,9 @@ esbuild.build({
     outfile: "dist/bundle.browser_dev.js",
     bundle: true,
     globalName: "bot", // exposes exports as window.bot
+    footer: {
+        js: "Object.assign(globalThis, bot);" // assign bot to window so we can hot plug new functions
+    },
     format: "iife",
     charset: 'utf8',
     platform: "browser",
