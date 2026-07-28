@@ -189,7 +189,7 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
 
 room.onRoomLink = async (url: string) => {
     try {
-        console.log("onRoomLink");
+        console.log("onRoomLink: " + url);
         await fetch(process.env.DISCORD_ROOMSTATUS_URL, {
             method: "PATCH",
             body: JSON.stringify({
