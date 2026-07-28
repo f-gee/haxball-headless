@@ -31,10 +31,11 @@ export interface VanillaPlayer {
 
 class PlayerManager {
     public all = new Map<number, Player>();
+    public afks = new Set<Player>();
     public spectators = new Set<Player>();
+    public activeSpectators = new Set<Player>();
     public redTeam = new Set<Player>();
     public blueTeam = new Set<Player>();
-    public afks = new Set<Player>();
     public admins = new Set<Player>();
     public superAdmins = new Set<Player>();
     public developers = new Set<Player>();
@@ -86,22 +87,32 @@ class PlayerManager {
     }
 
     private addToTeamSet(player: Player, team: number) {
-        if (team === 0) this.spectators.add(player);
-        if (team === 1) this.redTeam.add(player);
-        if (team === 2) this.blueTeam.add(player);
+        if (team === 0) {
+            this.spectators.add(player);
+            if (player.isAfk) this.afks.add(player);
+            else this.activeSpectators.add(player);
+        }
+        else if (team === 1) this.redTeam.add(player);
+        else if (team === 2) this.blueTeam.add(player);
     }
     private removeFromTeamSet(player: Player, team: number) {
-        if (team === 0) this.spectators.delete(player);
-        if (team === 1) this.redTeam.delete(player);
-        if (team === 2) this.blueTeam.delete(player);
+        if (team === 0) {
+            this.spectators.delete(player);
+            this.activeSpectators.delete(player);
+            this.afks.delete(player);
+        } else {
+            if (team === 1) this.redTeam.delete(player);
+            if (team === 2) this.blueTeam.delete(player);
+
+        }
     }
 
     public addPlayer(player: Player) {
         this.all.set(player.id, player);
         this.addToTeamSet(player, player.team);
-        if (player.isAdmin) this.admins.add(player);
-        if (player.isSuperAdmin) this.superAdmins.add(player);
-        if (player.isDeveloper) this.developers.add(player);
+        // if (player.isAdmin) this.admins.add(player);
+        // if (player.isSuperAdmin) this.superAdmins.add(player);
+        // if (player.isDeveloper) this.developers.add(player);
     }
 
     public removePlayer(playerId: number) {
@@ -132,9 +143,12 @@ class PlayerManager {
         player.isAfk = isAfk;
         if (isAfk) {
             this.afks.add(player);
+            this.activeSpectators.delete(player);
         } else {
             this.afks.delete(player);
+            this.activeSpectators.add(player);
         }
+        await playerManager.movePlayerToTeam(player, 0);
     }
     getByQuery(query: string): Player | null {
         const lower = query.toLocaleLowerCase();

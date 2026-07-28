@@ -296,7 +296,6 @@ commandManager.registerCommand({
 		} else {
 			await playerManager.setAfk(targetPlayer, true);
 			util.say(`${targetPlayer.name} is now AFK`);
-			await playerManager.movePlayerToTeam(targetPlayer, 0);
 			//await balancing.reorderSpecs();
 			await balancing.balanceTeamsWithTimeout(1000);
 			return { ok: true };
@@ -320,8 +319,38 @@ commandManager.registerCommand({
 		} else {
 			await playerManager.setAfk(targetPlayer, false);
 			util.say(`${targetPlayer.name} is no longer AFK`);
-			await playerManager.movePlayerToTeam(targetPlayer, 0);
 			await balancing.balanceTeamsWithTimeout(1000);
+			return { ok: true };
+		}
+	}
+});
+commandManager.registerCommand({
+	name: "mix", helpStrings: [".mix: mixes the teams"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		playerManager.redTeam.forEach(async (p) => {
+			await playerManager.movePlayerToTeam(p, 0);
+			p.spectatingSince = new Date(Math.floor(Math.random() * 1000));
+		});
+		playerManager.blueTeam.forEach(async (p) => {
+			await playerManager.movePlayerToTeam(p, 1);
+			p.spectatingSince = new Date(Math.floor(Math.random() * 1000));
+		});
+		await balancing.balanceTeamsWithTimeout(1000);
+		util.say(`${player.name} mixed the teams`);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "pause", helpStrings: [".pause: pauses / unpauses the game"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		gameManager.isGamePaused = !gameManager.isGamePaused;
+		if (gameManager.isGamePaused) {
+			room.pauseGame(true);
+			util.say("Game paused by " + player.name);
+			return { ok: true };
+		} else {
+			room.pauseGame(false);
+			util.say("Game resumed by " + player.name);
 			return { ok: true };
 		}
 	}

@@ -15,6 +15,36 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // ********************* Room events *********************
+room.onGamePause = (byPlayer: VanillaPlayer) => {
+    if (byPlayer) {
+        util.pm(byPlayer, `Oyun 30 saniye sonra devam edecek`, "info");
+        gameManager.timers.unpauseTimer = setTimeout(() => { room.pauseGame(false) }, 30000);
+        //data.miscStuff.manualUnpauseTimer = setTimeout(() => { room.pauseGame(false) }, 30000);
+    }
+    gameManager.isGamePaused = true;
+    // if (gameManager.isTrackingAFKs) {
+    //     clearInterval(gameManager.timers.AfkTrackingInterval);
+    // }
+};
+
+room.onGameUnpause = (byPlayer: VanillaPlayer) => {
+    gameManager.isGamePaused = false;
+    if (byPlayer) {
+        //clearTimeout(data.miscStuff.unpauseTimer);
+        //data.miscStuff.manualUnpauseTimer = null;
+        if (gameManager.timers.unpauseTimer) clearTimeout(gameManager.timers.unpauseTimer);
+        gameManager.timers.unpauseTimer = null;
+    }
+    // if (gameManager.isTrackingAFKs) {
+    //     util.resetAFKChecks();
+    //     gameManager.timers.afkTrackingInterval = setInterval(util.checkAFKs, 5000);
+    // }
+};
+
+room.onTeamGoal = async (teamId: 1 | 2) => {
+    gameManager.nextKickOffTeamId = 3 - teamId;
+    //await playerStorage.batchUpdatePlayers();
+}
 room.onPlayerTeamChange = async (player_vanilla: VanillaPlayer, byPlayer_vanilla: VanillaPlayer) => {
     const player = playerManager.all.get(player_vanilla.id);
     if (!player) {
@@ -30,6 +60,7 @@ room.onPlayerTeamChange = async (player_vanilla: VanillaPlayer, byPlayer_vanilla
         //should not happen
         return;
     }
+    byPlayer.lastActivity = new Date(); // just to make sure admins are not AFK'd often
     if (gameManager.timers.balanceTimer) {
         clearTimeout(gameManager.timers.balanceTimer);
         gameManager.timers.balanceTimer = null;
@@ -39,16 +70,50 @@ room.onPlayerTeamChange = async (player_vanilla: VanillaPlayer, byPlayer_vanilla
         // check AFK
         if (player.isAfk) {
             await room.setPlayerTeam(player.id, 0);
-            return util.pm(byPlayer, `${player.name} AFK!`, "error");
+            util.pm(byPlayer, `${player.name} AFK!`, "error");
+            return
         }
     } else {
         player.spectatingSince = new Date();
     }
-    await playerManager.handleTeamChange(player, player_vanilla.team);
+    playerManager.handleTeamChange(player, player_vanilla.team);
     if (byPlayer && player_vanilla.team === 0) {
         await balancing.reorderSpecs();
     }
     await balancing.balanceTeamsWithTimeout(2000);
+};
+
+room.onGameStart = async (byPlayer: VanillaPlayer) => {
+    gameManager.nextKickOffTeamId = 1;
+    if (gameManager.timers.startTimer) clearTimeout(gameManager.timers.startTimer);
+    gameManager.timers.startTimer = null;
+    gameManager.isGameGoingOn = true;
+
+    // if (gameManager.isTrackingAFKs) {
+    //     util.resetAFKChecks();
+    //     gameManager.timers.afkTrackingInterval = setInterval(util.checkAFKs, 5000);
+    // }
+};
+
+room.onGameStop = async (byPlayer: VanillaPlayer) => {
+    gameManager.nextKickOffTeamId = 1;
+    gameManager.isGameGoingOn = false;
+    if (byPlayer) {
+        gameManager.gameEndAutoStart = false;
+        if (gameManager.timers.startTimer) clearTimeout(gameManager.timers.startTimer);
+        gameManager.timers.startTimer = null;
+        util.say(`Game will start in 30 seconds`);
+        gameManager.timers.startTimer = setTimeout(room.startGame, 30000);
+    }
+    if (gameManager.captainMode) {
+        balancing.clearCaptainPrompt();
+        gameManager.lastTeamThatPicked = 2;
+    }
+    await balancing.balanceTeamsWithTimeout(2000);
+    // if (gameManager.isTrackingAFKs) {
+    //     clearInterval(gameManager.timers.AfkTrackingInterval);
+    // }
+    //await playerStorage.batchUpdatePlayers();
 };
 
 room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
@@ -61,7 +126,7 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
         isAfk: false,
         isAdmin: false,
         isSuperAdmin: false,
-        isDeveloper: true,
+        isDeveloper: false,
         isVip: false,
         id: vanillaPlayer.id,
         name: vanillaPlayer.name,
@@ -77,9 +142,19 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
         chatSpamTickets: 0
     };
     playerManager.addPlayer(player);
-    room.sendAnnouncement(`Hello ${vanillaPlayer.name}`);
-    room.setPlayerAdmin(vanillaPlayer.id, true);
-    playerManager.setDeveloper(player, true);
+    const foundAdmin = gameManager.savedAdminAuths.data.find((a: { auth: string; }) => a.auth === vanillaPlayer.auth);
+    if (foundAdmin) {
+        if (foundAdmin.level === "developer") {
+            playerManager.setDeveloper(player, true);
+        } else if (foundAdmin.level === "superAdmin") {
+            playerManager.setSuperAdmin(player, true);
+        } else {
+            playerManager.setAdmin(player, true);
+        }
+    }
+    // room.sendAnnouncement(`Hello ${vanillaPlayer.name}`);
+    // room.setPlayerAdmin(vanillaPlayer.id, true);
+    // playerManager.setDeveloper(player, true);
     await balancing.balanceTeamsWithTimeout(1000);
 };
 room.onPlayerLeave = async (vanillaPlayer: VanillaPlayer) => {
@@ -91,6 +166,11 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
     if (!player) {
         //util.debugLog(`onPlayerChat: player not found for player ${vanillaPlayer.name} #${vanillaPlayer.id}`);
         return;
+    }
+    if (gameManager.isCaptainPickingActive) {
+        if (player.id === gameManager.captainPromptObj.captainId) {
+            balancing.captainHandleChoice(player, message);
+        }
     }
     if (!util.checkSpam(player, message)) {
         return false
@@ -131,7 +211,9 @@ room.onRoomLink = async (url: string) => {
                 "Content-Type": "application/json",
             },
         });
-        window.open(url, '_blank')?.focus();
+        if (process.env.NODE_ENV === "development" && process.env.HAXBALL_ENV === "browser") {
+            window.open(url, '_blank')?.focus();
+        }
     } catch (e) {
         util.debugLog(e);
     }

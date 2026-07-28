@@ -19,6 +19,7 @@ declare const process: {
         SAVED_ADMIN_AUTHS_URL: string;
         STADIUMS_URL: string;
         KITS_URL: string;
+        DEV_HB_TOKEN: string;
     };
 };
 

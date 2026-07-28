@@ -55,9 +55,9 @@ export function messageDevelopers(message: string) {
     playerManager.developers.forEach(p => room.sendAnnouncement(message, p.id, Config.colors.gold));
 }
 export function say(message: string) {
-    room.sendAnnouncement(message, null, Config.colors.green);
+    room.sendAnnouncement("" + message, null, Config.colors.green);
 }
-export function pm(player: Player, message: string, messageType: 'info' | 'error' | 'warning' | 'success' | 'default' = 'default') {
+export function pm(player: Player | VanillaPlayer, message: string, messageType: 'info' | 'error' | 'warning' | 'success' | 'default' = 'default') {
     let color: number | null = null, msgPrefix: string;
     switch (messageType) {
         case 'info':
@@ -82,29 +82,17 @@ export function pm(player: Player, message: string, messageType: 'info' | 'error
     }
     room.sendAnnouncement(msgPrefix + " " + message, player.id, color);
 }
-// export function errorPM(player: Player, message: string) {
-//     room.sendAnnouncement("❌ " + message, player.id, Config.colors.error);
-// }
-// export function warningPM(player: Player, message: string) {
-//     room.sendAnnouncement("⚠️ " + message, player.id, Config.colors.orange);
-// }
-// export function infoPM(player: Player, message: string) {
-//     room.sendAnnouncement("ℹ️ " + message, player.id, Config.colors.teal);
-// }
-// export function successPM(player: Player, message: string) {
-//     room.sendAnnouncement("✔️ " + message, player.id, Config.colors.green);
-// }
 export function validatePlayer(vanillaPlayer: VanillaPlayer): boolean {
-    for (const [key, obj] of playerManager.all) {
-        if (vanillaPlayer.name === obj.name) {
+    for (const [key, otherPlayer] of playerManager.all) {
+        if (vanillaPlayer.name === otherPlayer.name) {
             room.kickPlayer(vanillaPlayer.id, `Bu isimde bir oyuncu var`, false);
             return false;
         }
     }
     if (gameManager.blockNewTab) {
-        for (const [key, obj] of playerManager.all) {
-            if (vanillaPlayer.conn === obj.conn || vanillaPlayer.auth === obj.auth) {
-                room.kickPlayer(vanillaPlayer.id, `Çoklu giriş ${obj.name}`, false);
+        for (const [key, otherPlayer] of playerManager.all) {
+            if (vanillaPlayer.conn === otherPlayer.conn || vanillaPlayer.auth === otherPlayer.auth) {
+                room.kickPlayer(vanillaPlayer.id, `Çoklu giriş (${otherPlayer.name})`, false);
                 return false;
             }
         }
