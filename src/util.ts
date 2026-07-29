@@ -19,6 +19,18 @@ export const util = {
         }
         throw new Error("set is empty");
     },
+    getRandomFromSetMultiple<T>(set: ReadonlySet<T>, count: number): T[] {
+        if (set.size === 0) throw new Error("set is empty");
+        if (count > set.size) throw new Error("count is greater than set size");
+        const result: T[] = [];
+        const copy = new Set(set);
+        for (let i = 0; i < count; i++) {
+            const item = util.getRandomFromSet(copy);
+            result.push(item);
+            copy.delete(item);
+        }
+        return result;
+    },
     nameToMention(name: string) { return "@" + name.replaceAll(" ", "_"); },
     debugLog(message?: unknown) {
         let text: string;
@@ -60,17 +72,17 @@ export const util = {
     },
     messageAdmins(message: string) {
         if (!playerManager.admins.size) { return }
-        message = "[Admins] " + message;
+        message = "[⭐] " + message;
         playerManager.admins.forEach(p => room.sendAnnouncement(message, p.id, Config.colors.gold));
     },
     messageSuperAdmins(message: string) {
         if (!playerManager.superAdmins.size) { return }
-        message = "[SuperAdmins] " + message;
+        message = "[⭐⭐] " + message;
         playerManager.superAdmins.forEach(p => room.sendAnnouncement(message, p.id, Config.colors.gold));
     },
     messageDevelopers(message: string) {
         if (!playerManager.developers.size) { return }
-        message = "[Devs] " + message;
+        message = "[⭐⭐⭐] " + message;
         playerManager.developers.forEach(p => room.sendAnnouncement(message, p.id, Config.colors.gold));
     },
     say(message: string) {

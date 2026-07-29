@@ -18,6 +18,8 @@ npm install
 DISCORD_ROOMSTATUS_URL=https://discord.com/api/webhooks/[webhookId]/[token]/messages/[messageId]?thread_id=[threadId]
 DISCORD_ROOMPASSWORD_URL=https://discord.com/api/webhooks/[webhookId]/[token]/messages/[messageId]?thread_id=[threadId]
 DISCORD_CHATLOGS_URL=https://discord.com/api/webhooks/[webhookId]/[token]?thread_id=[threadId]
+DISCORD_ICON_URL=https://[yourEmbedIcon].webp
+DISCORD_INVITE_URL=https://discord.gg/[yourServer]
 SAVED_ADMIN_AUTHS_URL=https://yourfile.json
 STADIUMS_URL=https://yourfile.json
 KITS_URL=https://yourfile.json

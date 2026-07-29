@@ -23,8 +23,8 @@ interface CommandParseResult {
 	args: string[];
 }
 export type CommandResult =
-	| { ok: true; success?: any, info?: string, warning?: string }
-	| { ok: false; error?: string; needsHelp?: boolean, success?: any, info?: string, warning?: string };
+	| { ok: true; success?: any, info?: string, warning?: string, announce?: string }
+	| { ok: false; error?: string; needsHelp?: boolean, success?: any, info?: string, warning?: string, announce?: string };
 
 export class CommandManager {
 	//public commands: Command[];
@@ -33,10 +33,14 @@ export class CommandManager {
 	constructor() {
 		this.commands = {};
 		this.commandAliases = {
+			"v": "version",
+			"h": "help",
 			"ta": "toggle_admin",
 			"p": "pause",
 			"r": "red",
 			"b": "blue",
+			"bal": "balance",
+			"dc": "discord",
 		};
 	}
 	// registerAlias(alias: string, name: string) {
@@ -91,7 +95,7 @@ export class CommandManager {
 	}
 	async parseAndExecuteCommand(player: Player, message: string): Promise<void> {
 		//util.debugLog(`${player.name}: ${message}`);
-		util.messageDevelopers(`${player.name}: ${message}`);
+		//util.messageDevelopers(`${player.name}: ${message}`);
 		const parseResult = this.parseCommandInputs(player, message.substring(1));
 		if (!parseResult.isCommandFound) {
 			util.pm(player, `.${parseResult.commandName}: command not found`, "error");
@@ -120,6 +124,9 @@ export class CommandManager {
 		}
 		if (result.success) {
 			util.pm(player, result.success, "success");
+		}
+		if (result.announce) {
+			util.say(result.announce);
 		}
 	}
 
@@ -159,7 +166,7 @@ commandManager.registerCommand({
 });
 commandManager.registerCommand({
 	name: "get", category: "utility", helpStrings: [".get [varName]: shows the value of a parameter", "possible values: captainmode, autobalance, forceequalteams, password, captcha"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
-	execute: (player, args) => {
+	execute: async (player, args) => {
 		let targetVariable: any;
 		let varName = args[0];
 		switch (varName) {
@@ -199,6 +206,15 @@ commandManager.registerCommand({
 				}
 				varName = args[1];
 				break;
+			case "teams":
+			case "teamcaps":
+				const inputArray = args[1].split("v").map((v) => parseInt(v));
+				if (inputArray.length !== 2 || isNaN(inputArray[0]) || isNaN(inputArray[1])) {
+					return { ok: false, error: "Invalid team caps format. Use [red]v[blue] format" };
+				}
+				const result = await gameManager.changeTeamCaps(inputArray[0], inputArray[1]);
+				util.say(`Team caps changed to ${result} (by ${player.name})`);
+				return { ok: true };
 			default:
 				return { ok: false, error: "Invalid variable name" };
 		}
@@ -349,6 +365,8 @@ commandManager.registerCommand({
 	execute: (player, args) => {
 		const target = playerManager.getByQuery(args[0]);
 		if (!target) return { ok: false, error: "Player not found" };
+		if (target.id === player.id) return { ok: false, error: "You cannot kick yourself" };
+		if (target.isSuperAdmin && !player.isSuperAdmin) return { ok: false, error: `You are not allowed to kick ${target.name}` };
 		let reason = args.slice(1).join(" ");
 		if (!reason) { reason = `(${player.name})` };
 		room.kickPlayer(target.id, reason, false);
@@ -361,6 +379,8 @@ commandManager.registerCommand({
 	execute: (player, args) => {
 		const target = playerManager.getByQuery(args[0]);
 		if (!target) return { ok: false, error: "Player not found" };
+		if (target.id === player.id) return { ok: false, error: "You cannot ban yourself" };
+		if (target.isSuperAdmin && !player.isSuperAdmin) return { ok: false, error: `You are not allowed to ban ${target.name}` };
 		let reason = args.slice(1).join(" ");
 		if (!reason) { reason = `(${player.name})` };
 		room.kickPlayer(target.id, reason, true);
@@ -460,9 +480,8 @@ commandManager.registerCommand({
 			return { ok: true, warning: `${targetPlayer.name} is not AFK` };
 		} else {
 			await playerManager.setAfk(targetPlayer, false);
-			util.say(`${targetPlayer.name} is no longer AFK`);
 			await balancing.balanceTeamsWithTimeout(500);
-			return { ok: true };
+			return { ok: true, announce: `${targetPlayer.name} is no longer AFK` };
 		}
 	}
 });
@@ -478,8 +497,7 @@ commandManager.registerCommand({
 			p.spectatingSince = new Date(Math.floor(Math.random() * 1000));
 		});
 		await balancing.balanceTeamsWithTimeout(1000);
-		util.say(`${player.name} mixed the teams`);
-		return { ok: true };
+		return { ok: true, announce: `${player.name} mixed the teams` };
 	}
 });
 commandManager.registerCommand({
@@ -514,11 +532,36 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
+	name: "swap", category: "teams", helpStrings: [".swap [player1] [player2]: swaps two players' teams"], minArguments: 2, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		const p1 = playerManager.getByQuery(args[0]);
+		if (!p1) return { ok: false, error: `Player not found: ${args[0]}` };
+		const p2 = playerManager.getByQuery(args[1]);
+		if (!p2) return { ok: false, error: `Player not found: ${args[1]}` };
+		if (p1.id === p2.id) return { ok: false, error: "Two players cannot be the same" };
+		if (p1.isAfk || p2.isAfk) return { ok: false, error: "One of the players is AFK" };
+		if (p1.team === p2.team) return { ok: false, error: "Players must be on different teams" };
+		await playerManager.movePlayerToTeam(p1, p2.team);
+		await playerManager.movePlayerToTeam(p2, p1.team);
+		//await balancing.balanceTeamsWithTimeout(500);
+		return { ok: true, announce: `${player.name} swapped ${p1.name} and ${p2.name}` };
+	}
+});
+commandManager.registerCommand({
+	name: "balance", category: "teams", helpStrings: [".balance: balances teams"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		await balancing.balanceTeamsWithTimeout(500);
+		return { ok: true, announce: `Teams balanced (by ${player.name})` };
+	}
+});
+commandManager.registerCommand({
 	name: "mute", category: "chat", helpStrings: [".mute [player] [minutes]: mutes a player for N minutes"], minArguments: 2, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
 	execute: (player, args) => {
 		const targetPlayer = playerManager.getByQuery(args[0]);
 		if (!targetPlayer) return { ok: false, error: "Player not found" };
-		const minutes = parseInt(args[1]);
+		if (targetPlayer.id === player.id) return { ok: false, error: "You cannot mute yourself" };
+		if (targetPlayer.isSuperAdmin && !player.isSuperAdmin) return { ok: false, error: `You are not allowed to mute ${targetPlayer.name}` };
+		const minutes = parseFloat(args[1]);
 		if (isNaN(minutes) || minutes <= 0 || minutes > 30) return { ok: false, error: "Invalid minutes" };
 		targetPlayer.chatMutedUntil = new Date(Date.now() + minutes * 60 * 1000);
 		util.say(`🔕 ${targetPlayer.name} is muted for ${minutes} minutes by ${player.name}`);
@@ -531,7 +574,7 @@ commandManager.registerCommand({
 		const targetPlayer = playerManager.getByQuery(args[0]);
 		if (!targetPlayer) return { ok: false, error: "Player not found" };
 		targetPlayer.chatMutedUntil = new Date(0);
-		util.say(`✅ ${targetPlayer.name} is unmuted by ${player.name}`);
+		util.say(`✔️ ${targetPlayer.name} is unmuted by ${player.name}`);
 		return { ok: true };
 	}
 });
@@ -556,7 +599,21 @@ commandManager.registerCommand({
 			if (p.isSuperAdmin) { return; }
 			p.chatMutedUntil = new Date(0);
 		});
-		util.say(`✅ Everyone is unmuted by ${player.name}`);
+		util.say(`✔️ Everyone is unmuted by ${player.name}`);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "bb", category: "utility", helpStrings: [".bb: leave the room"], minArguments: 0, cooldownSeconds: 1, needsAdmin: false, needsSuperAdmin: false,
+	execute: (player, args) => {
+		room.kickPlayer(player.id, `See you soon! 👋`, false);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "discord", category: "utility", helpStrings: ["shows discord invite link"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
+	execute: (player, args) => {
+		util.say(`Discord adresimiz: ${process.env.DISCORD_INVITE_URL}`);
 		return { ok: true };
 	}
 });

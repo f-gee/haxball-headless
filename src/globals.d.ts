@@ -16,6 +16,7 @@ declare const process: {
         DISCORD_ROOMPASSWORD_URL: string; // https://discord.com/api/webhooks/[webhookId]/[token]/messages/[messageId]?thread_id=[threadId]
         DISCORD_CHATLOGS_URL: string; // https://discord.com/api/webhooks/[webhookId]/[token]?thread_id=[threadId]
         DISCORD_ICON_URL: string;
+        DISCORD_INVITE_URL: string;
         SAVED_ADMIN_AUTHS_URL: string;
         STADIUMS_URL: string;
         KITS_URL: string;

@@ -1,3 +1,5 @@
+import { balancing } from "./balancing";
+import { playerManager } from "./PlayerManager";
 import { util } from "./util";
 
 interface SavedAdminData {
@@ -65,6 +67,28 @@ export class GameManager {
         console.log(`calling HBInit with token: ${token}`);
         const room = HBInit(this.roomParams);
         return room;
+    }
+
+    async changeTeamCaps(red: number, blue: number) {
+        const oldTeamCaps = { ...this.teamCaps };
+        this.teamCaps.red = red;
+        this.teamCaps.blue = blue;
+        if (oldTeamCaps.red > red) {
+            // spec surplus red players
+            const surplusRedPlayers = util.getRandomFromSetMultiple(playerManager.red, oldTeamCaps.red - red);
+            for (const player of surplusRedPlayers) {
+                await playerManager.movePlayerToTeam(player, 0);
+            }
+        }
+        if (oldTeamCaps.blue > blue) {
+            // spec surplus blue players
+            const surplusBluePlayers = util.getRandomFromSetMultiple(playerManager.blue, oldTeamCaps.blue - blue);
+            for (const player of surplusBluePlayers) {
+                await playerManager.movePlayerToTeam(player, 0);
+            }
+        }
+        await balancing.balanceTeamsWithTimeout(1000);
+        return `${red}v${blue}`;
     }
 }
 // roomName: string = "Haxball Room", maxPlayers: number = 12, isPublic: boolean = false
