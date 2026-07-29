@@ -6,7 +6,10 @@ body {
     margin: 0;
     min-height: 100vh;
     padding: 2.5rem;
-    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(135deg, #0d0614 0%, #030102 100%);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #e2e8f0;
 }
@@ -24,8 +27,8 @@ h3:first-of-type {
 
 /* --- host page form --- */
 form {
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: rgba(15, 8, 22, 0.7);
+    border: 1px solid rgba(139, 92, 246, 0.12);
     border-radius: 16px;
     padding: 2rem;
     width: 100%;
@@ -33,7 +36,7 @@ form {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
 }
 
 form>label {
@@ -41,8 +44,8 @@ form>label {
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: rgba(5, 2, 8, 0.6);
+    border: 1px solid rgba(139, 92, 246, 0.12);
     border-radius: 10px;
     cursor: pointer;
     font-size: 0.95rem;
@@ -50,20 +53,20 @@ form>label {
 }
 
 form>label:has(input:checked) {
-    border-color: #818cf8;
-    background: rgba(99, 102, 241, 0.15);
+    border-color: #7c3aed;
+    background: rgba(124, 58, 237, 0.1);
 }
 
 input[type="radio"] {
-    accent-color: #818cf8;
+    accent-color: #7c3aed;
     width: 16px;
     height: 16px;
 }
 
 form input[type="text"] {
     padding: 0.85rem 1rem;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: rgba(5, 2, 8, 0.6);
+    border: 1px solid rgba(139, 92, 246, 0.12);
     border-radius: 10px;
     color: #f8fafc;
     font-size: 0.95rem;
@@ -72,16 +75,16 @@ form input[type="text"] {
 }
 
 form input[type="text"]::placeholder {
-    color: #64748b;
+    color: #5b5568;
 }
 
 form input[type="text"]:focus {
-    border-color: #818cf8;
+    border-color: #7c3aed;
 }
 
 form button {
     padding: 0.85rem;
-    background: #6366f1;
+    background: #5b21b6;
     border: none;
     border-radius: 10px;
     color: white;
@@ -92,7 +95,7 @@ form button {
 }
 
 form button:hover {
-    background: #4f46e5;
+    background: #4c1d95;
 }
 
 form button:active {
@@ -106,13 +109,13 @@ form button:active {
     min-height: 160px;
     max-height: 280px;
     overflow-y: auto;
-    background: rgba(15, 23, 42, 0.7);
-    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: rgba(5, 2, 8, 0.7);
+    border: 1px solid rgba(196, 181, 253, 0.95);
     border-radius: 10px;
     padding: 0.85rem 1rem;
     font-family: "SF Mono", Consolas, monospace;
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: #a394b8;
     white-space: pre-wrap;
     word-break: break-word;
 }
@@ -125,8 +128,8 @@ input#chatInput {
     max-width: 480px;
     margin-top: 0.6rem;
     padding: 0.75rem 1rem;
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: rgba(15, 8, 22, 0.7);
+    border: 1px solid rgba(196, 181, 253, 0.95);
     border-radius: 10px;
     color: #f8fafc;
     font-size: 0.9rem;
@@ -144,13 +147,13 @@ input#chatInput {
 textarea#evalInput:focus,
 input#nameInput:focus,
 input#chatInput:focus {
-    border-color: #818cf8;
+    border-color: #7c3aed;
 }
 
 textarea#evalInput::placeholder,
 input#nameInput::placeholder,
 input#chatInput::placeholder {
-    color: #64748b;
+    color: #5b5568;
 }
 
 button#evalBtn,
@@ -161,7 +164,7 @@ button#closeBtn {
     max-width: 480px;
     margin-top: 0.6rem;
     padding: 0.75rem;
-    background: #6366f1;
+    background: #5b21b6;
     border: none;
     border-radius: 10px;
     color: white;
@@ -173,13 +176,13 @@ button#closeBtn {
 
 button#evalBtn:hover,
 button#chatBtn:hover {
-    background: #4f46e5;
+    background: #4c1d95;
 }
 
 button#closeBtn {
-    background: #dc2626;
+    background: #7f1d1d;
 }
 
 button#closeBtn:hover {
-    background: #b91c1c;
+    background: #601616;
 }
