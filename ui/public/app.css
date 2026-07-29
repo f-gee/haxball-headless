@@ -1,0 +1,29 @@
+body {
+    font-family: monospace;
+    background: #1e1e1e;
+    color: #ddd;
+    padding: 1rem;
+}
+
+#console {
+    background: #111;
+    padding: 8px;
+    height: 200px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+    white-space: pre-wrap;
+}
+
+textarea,
+input {
+    width: 100%;
+    background: #222;
+    color: #ddd;
+    border: 1px solid #444;
+    padding: 6px;
+    box-sizing: border-box;
+}
+
+button {
+    margin-top: 4px;
+}

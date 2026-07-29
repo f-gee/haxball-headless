@@ -32,15 +32,19 @@ esbuild.build({
 
 esbuild.build({
     entryPoints: ["src/main.ts"],
-    outfile: "dist/bundle.puppeteer.js",
+    outfile: "dist/bundle.puppeteer_dev.js",
     bundle: true,
     minify: true,
+    globalName: "bot",
+    footer: {
+        js: "Object.assign(globalThis, bot);" // assign bot to window so we can hot plug new functions
+    },
     format: "iife",
     charset: 'utf8',
     platform: "browser",
     target: "es2020",
     define: {
-        "process.env.NODE_ENV": '"production"',
+        "process.env.NODE_ENV": '"development"',
         ...envDefine, // Spread all dynamically parsed .env variables
         "process.env.HAXBALL_ENV": JSON.stringify('puppeteer'),
         "__BOT_VERSION__": JSON.stringify(pkg.version),

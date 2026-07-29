@@ -1,0 +1,18 @@
+doctype html
+html
+  head
+    meta(charset="UTF-8")
+    link(rel="stylesheet" href="/app.css")
+  body
+    h3 Host Haxball Room
+
+    form(action="/host" method="POST")
+      label
+        input(type="radio" name="mode" value="puppeteer" checked)
+        |  Puppeteer
+      label
+        input(type="radio" name="mode" value="haxballjs")
+        |  haxball.js
+
+      input(type="text" name="token" placeholder="Room token" required)
+      button(type="submit") Host

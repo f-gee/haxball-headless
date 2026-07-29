@@ -1,0 +1,20 @@
+doctype html
+html
+  head
+    meta(charset="UTF-8")
+    link(rel="stylesheet" href="/app.css")
+  body
+    h3 Eval Console (mode: #{mode})
+    div#console
+    textarea#evalInput(rows="3" placeholder="room.getPlayerList()")
+    button#evalBtn Run
+
+    h3 Send Chat
+    input#nameInput(placeholder="Your name")
+    input#chatInput(placeholder="Message to room...")
+    button#chatBtn Send
+
+    h3 Close Room
+    button#closeBtn Close
+
+    script(src="/app.js")
