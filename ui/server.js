@@ -119,4 +119,4 @@ app.get('/close', (req, res) => {
     res.json({ ok: true });
 });
 
-app.listen(3001, '127.0.0.1', () => console.log('UI on http://localhost:3001'));
+app.listen(3001, () => console.log('UI on port 3001'));
