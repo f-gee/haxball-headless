@@ -8,7 +8,7 @@ let hjsContext;
 
 function createRoom(token) {
     return new Promise((resolve, reject) => {
-        const bundlePath = path.join(__dirname, '..', 'dist', 'bundle.node_dev.js');
+        const bundlePath = path.join(__dirname, '..', 'dist', 'bundle.node_prod.js');
         delete require.cache[require.resolve(bundlePath)]; // trying to fix empty botExports
         HaxballJS().then((HBInit) => {
             try {
