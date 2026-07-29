@@ -216,6 +216,11 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
 room.onRoomLink = async (url: string) => {
     try {
         console.log("onRoomLink: " + url);
+        //console.log("room at export time:", typeof room, room);
+        //console.log("util at export time:", typeof util, util);
+        if (process.env.HAXBALL_ENV === "node") {
+            hjsCallback({ room, util, gameManager, playerManager, commandManager, url });
+        }
         await fetch(process.env.DISCORD_ROOMSTATUS_URL, {
             method: "PATCH",
             body: JSON.stringify({

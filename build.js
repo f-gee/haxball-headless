@@ -51,18 +51,20 @@ esbuild.build({
     },
 }).catch(() => process.exit(1));
 
+/*
 esbuild.build({
     entryPoints: ["src/main.ts"],
     outfile: "dist/bundle.node_dev.js",
     bundle: true,
     format: "iife",
+    globalName: "bot",
     charset: 'utf8',
     platform: "node",
     target: "es2020",
     define: {
         "process.env.NODE_ENV": '"development"',
         ...envDefine, // Spread all dynamically parsed .env variables
-        "process.env.HAXBALL_ENV": JSON.stringify('node'),
+        "process.env.HAXBALL_ENV": '"node"',
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
     banner: {
@@ -84,7 +86,7 @@ esbuild.build({
     define: {
         "process.env.NODE_ENV": '"production"',
         ...envDefine, // Spread all dynamically parsed .env variables
-        "process.env.HAXBALL_ENV": JSON.stringify('node'),
+        "process.env.HAXBALL_ENV": '"node"',
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
     banner: {
@@ -92,5 +94,27 @@ esbuild.build({
     },
     footer: {
         js: `});`
+    }
+}).catch(() => process.exit(1));
+*/
+esbuild.build({
+    entryPoints: ["src/main.ts"],
+    outfile: "dist/bundle.node_dev.js",
+    bundle: true,
+    format: "iife",
+    charset: 'utf8',
+    platform: "node",
+    target: "es2020",
+    define: {
+        "process.env.NODE_ENV": '"development"',
+        ...envDefine, // Spread all dynamically parsed .env variables
+        "process.env.HAXBALL_ENV": '"node"',
+        "__BOT_VERSION__": JSON.stringify(pkg.version),
+    },
+    banner: {
+        js: `module.exports=(HBInit,hjsToken,hjsCallback)=>{`
+    },
+    footer: {
+        js: `}`
     }
 }).catch(() => process.exit(1));

@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import puppeteerManager from './interface_puppeteer.js';
+import haxballJsManager from './interface_haxballjs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,6 +18,12 @@ const state = {
     mode: null, // 'puppeteer' | 'haxballjs'
     room: null,  // only for haxball.js
     page: null,  // only for puppeteer
+    url: null,
+};
+
+const parseHaxballToken = (tokenInput) => {
+    const tokenArray = tokenInput.split('"')
+    return tokenArray[Math.floor(tokenArray.length / 2)];
 };
 
 app.get('/test', (req, res) => {
@@ -27,7 +34,7 @@ app.get('/', (req, res) => {
     if (!state.hosted) {
         return res.render('host');
     }
-    res.render('console', { mode: state.mode });
+    res.render('console', { mode: state.mode, url: state.url });
 });
 
 app.post('/host', async (req, res) => {
@@ -38,8 +45,9 @@ app.post('/host', async (req, res) => {
     }
 
     try {
+        const parsedToken = parseHaxballToken(token);
         if (mode === 'puppeteer') {
-            const result = await puppeteerManager.createRoom(token);
+            const result = await puppeteerManager.createRoom(parsedToken);
             state.page = result.page;
             //state.room = result.room;
             // console.log("room: ");
@@ -47,7 +55,9 @@ app.post('/host', async (req, res) => {
             console.log("page2: ");
             console.log(state.page);
         } else if (mode === 'haxballjs') {
-            // state.room = await startWithHaxballJs(token);
+            const result = await haxballJsManager.createRoom(parsedToken);
+            state.room = result.room;
+            state.url = result.url;
         } else {
             return res.status(400).send('Invalid mode');
         }
@@ -56,7 +66,12 @@ app.post('/host', async (req, res) => {
         state.mode = mode;
         res.redirect('/');
     } catch (err) {
-        res.status(500).send(`Failed to host: ${err.message}`);
+        //res.status(500).send(`Failed to host: ${err.message}`);
+        //res.status(500).send(`Failed to host: ${err.message}\n${err.stack}`);
+        res.status(500).json({
+            error: err.message,
+            stack: err.stack,
+        });
     }
 });
 
@@ -74,7 +89,7 @@ app.post('/eval', async (req, res) => {
             }
             result = result.value;
         } else {
-            result = eval(code); // has access to state.room in this scope
+            result = await haxballJsManager.safeEvaluate(code); // has access to state.room in this scope
         }
         result = typeof result === 'object' ? JSON.stringify(result) : String(result);
     } catch (err) {
@@ -99,7 +114,7 @@ app.get('/close', (req, res) => {
     if (state.mode === "puppeteer") {
         puppeteerManager.closeRoom();
     } else {
-        process.exit();
+        haxballJsManager.closeRoom();
     }
     res.json({ ok: true });
 });

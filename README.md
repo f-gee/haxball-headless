@@ -46,3 +46,4 @@ DEV_HB_TOKEN=thr1.haxballToken
 - Write example JSON data files
 - Check default admin passwords
 - Pass geo param to HBInit
+- remove direct eval in puppeteer interface

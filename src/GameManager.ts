@@ -58,8 +58,10 @@ export class GameManager {
         let token = null;
         if (process.env.HAXBALL_ENV === "puppeteer") {
             token = (window as any).HB_TOKEN;
-        } else if (process.env.HAXBALL_ENV === "node" || process.env.HAXBALL_ENV === "browser") {
+        } else if (process.env.HAXBALL_ENV === "browser") {
             token = process.env.DEV_HB_TOKEN;
+        } else if (process.env.HAXBALL_ENV === "node") {
+            token = hjsToken;
         }
         if (token) {
             this.roomParams.token = token;

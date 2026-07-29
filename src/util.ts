@@ -72,17 +72,17 @@ export const util = {
     },
     messageAdmins(message: string) {
         if (!playerManager.admins.size) { return }
-        message = "[⭐] " + message;
+        message = "[🌟] " + message;
         playerManager.admins.forEach(p => room.sendAnnouncement(message, p.id, Config.colors.gold));
     },
     messageSuperAdmins(message: string) {
         if (!playerManager.superAdmins.size) { return }
-        message = "[⭐⭐] " + message;
+        message = "[🪐] " + message;
         playerManager.superAdmins.forEach(p => room.sendAnnouncement(message, p.id, Config.colors.gold));
     },
     messageDevelopers(message: string) {
         if (!playerManager.developers.size) { return }
-        message = "[⭐⭐⭐] " + message;
+        message = "[🌌] " + message;
         playerManager.developers.forEach(p => room.sendAnnouncement(message, p.id, Config.colors.gold));
     },
     say(message: string) {

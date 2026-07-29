@@ -8,11 +8,6 @@ let page = null;
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
-const parseHaxballToken = (tokenInput) => {
-    const tokenArray = tokenInput.split('"')
-    return tokenArray[Math.floor(tokenArray.length / 2)];
-};
-
 const getOrLaunchBrowser = async () => {
     if (browser) {
         return browser;
@@ -50,19 +45,8 @@ const getOrLaunchBrowser = async () => {
     }
 }
 
-// async function getAvailableGlobals(page, candidates) {
-//     return page.evaluate((candidates) => {
-//         return candidates.filter(name => typeof window[name] !== "undefined");
-//     }, candidates);
-// }
-
-async function createRoom(tokenInput) {
-    //let page = null;
-
+async function createRoom(token) {
     try {
-        const token = parseHaxballToken(tokenInput);
-        //const bundlePath = path.join(__dirname, '..', 'dist', 'bundle.puppeteer.js');
-        //const bundlePath = path.join(__dirname, '..', 'dist', 'bundle.browser_dev.js');
         const bundlePath = path.join(__dirname, '..', 'dist', 'bundle.puppeteer_dev.js');
         const botCode = fs.readFileSync(bundlePath, 'utf8');
         const browser = await getOrLaunchBrowser();
@@ -109,7 +93,7 @@ async function createRoom(tokenInput) {
 async function closeRoom() {
     await page.evaluate("room.sendAnnouncement('🤖 ROOM IS CLOSING! 🤖');");
     await delay(5000);
-    await await page.close().catch(() => { });
+    await page.close().catch(() => { });
     //isRoomUp = false;
     return { ok: true, message: "room closed" };
 };

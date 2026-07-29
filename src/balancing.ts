@@ -140,7 +140,7 @@ export const balancing = {
         const btLog = util.debugLog;
         //const orderedSpecsArray = [...playerManager.spectators].filter(a => !a.isAfk).sort((a, b) => +a.spectatingSince - +b.spectatingSince);
         const orderedSpecsArray = [...playerManager.activeSpectators].sort((a, b) => +a.spectatingSince - +b.spectatingSince);
-        btLog(`orderedSpecsArray = ` + orderedSpecsArray.map(x => x.name).join(', '));
+        //btLog(`orderedSpecsArray = ` + orderedSpecsArray.map(x => x.name).join(', '));
         //const totalActivePlayers = playerManager.redTeam.size + playerManager.blueTeam.size + orderedSpecsArray.length;
         const totalActivePlayers = playerManager.all.size - playerManager.afks.size;
         // first, remove any overflow
@@ -178,7 +178,6 @@ export const balancing = {
             }
         }
         // all specs added. now handle big imbalances
-        btLog(`Math.abs(playerManager.red.size - playerManager.blue.size): ${Math.abs(playerManager.red.size - playerManager.blue.size)}`);
         while (Math.abs(playerManager.red.size - playerManager.blue.size) > 1) {
             const fromTeam = playerManager.red.size > playerManager.blue.size ? 1 : 2;
             const toTeam = fromTeam === 1 ? 2 : 1;

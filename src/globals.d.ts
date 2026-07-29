@@ -7,6 +7,9 @@ declare function HBInit(config: {
     [key: string]: any;
 }): any;
 
+declare const hjsToken: string;
+declare const hjsCallback: function;
+
 // to check if (process.env.NODE_ENV !== "production")
 declare const process: {
     env: {

@@ -22,9 +22,10 @@ interface CommandParseResult {
 	commandName: string;
 	args: string[];
 }
-export type CommandResult =
-	| { ok: true; success?: any, info?: string, warning?: string, announce?: string }
-	| { ok: false; error?: string; needsHelp?: boolean, success?: any, info?: string, warning?: string, announce?: string };
+// export type CommandResult =
+// 	| { ok: true; success?: any, info?: string, warning?: string, announce?: string }
+// 	| { ok: false; error?: string; needsHelp?: boolean, success?: any, info?: string, warning?: string, announce?: string };
+export type CommandResult = { ok: boolean; success?: any, error?: any, info?: string, warning?: string, announce?: string }
 
 export class CommandManager {
 	//public commands: Command[];
@@ -111,10 +112,10 @@ export class CommandManager {
 			if (result.error) {
 				util.pm(player, result.error, "error");
 			}
-			if (result.needsHelp) {
-				const commandName = parseResult.command?.name || "";
-				util.pm(player, `For help type .help ${commandName}`, "error");
-			}
+			// if (result.needsHelp) {
+			// 	const commandName = parseResult.command?.name || "";
+			// 	util.pm(player, `For help type .help ${commandName}`, "error");
+			// }
 		}
 		if (result.warning) {
 			util.pm(player, result.warning, "warning");
@@ -162,6 +163,32 @@ commandManager.registerCommand({
 	execute: (player, args) => {
 		//util.pm(player, `Version: ${__BOT_VERSION__}`);
 		return { ok: true, info: `Version: ${__BOT_VERSION__}` };
+	}
+});
+commandManager.registerCommand({
+	name: "bb", category: "utility", helpStrings: [".bb: leave the room"], minArguments: 0, cooldownSeconds: 1, needsAdmin: false, needsSuperAdmin: false,
+	execute: (player, args) => {
+		room.kickPlayer(player.id, `See you soon! 👋`, false);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "discord", category: "utility", helpStrings: ["shows discord invite link"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
+	execute: (player, args) => {
+		util.say(`Discord adresimiz: ${process.env.DISCORD_INVITE_URL}`);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "eval", category: "utility", helpStrings: [".eval [code]"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
+	execute: (player, args) => {
+		const codeToRun = args.join(" ");
+		try {
+			const result = eval(codeToRun);
+			return { ok: true, success: util.variableToString(result) };
+		} catch (e) {
+			return { ok: false, error: util.variableToString(e) };
+		}
 	}
 });
 commandManager.registerCommand({
@@ -600,20 +627,6 @@ commandManager.registerCommand({
 			p.chatMutedUntil = new Date(0);
 		});
 		util.say(`✔️ Everyone is unmuted by ${player.name}`);
-		return { ok: true };
-	}
-});
-commandManager.registerCommand({
-	name: "bb", category: "utility", helpStrings: [".bb: leave the room"], minArguments: 0, cooldownSeconds: 1, needsAdmin: false, needsSuperAdmin: false,
-	execute: (player, args) => {
-		room.kickPlayer(player.id, `See you soon! 👋`, false);
-		return { ok: true };
-	}
-});
-commandManager.registerCommand({
-	name: "discord", category: "utility", helpStrings: ["shows discord invite link"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
-	execute: (player, args) => {
-		util.say(`Discord adresimiz: ${process.env.DISCORD_INVITE_URL}`);
 		return { ok: true };
 	}
 });

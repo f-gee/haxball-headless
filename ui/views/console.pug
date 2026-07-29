@@ -5,6 +5,11 @@ html
     link(rel="stylesheet" href="/app.css")
   body
     h3 Eval Console (mode: #{mode})
+    
+    if url
+        p Room link: 
+          a(href=url target="_blank") #{url}
+
     div#console
     textarea#evalInput(rows="3" placeholder="room.getPlayerList()")
     button#evalBtn Run
