@@ -1,6 +1,6 @@
 {
     "name": "haxball_headless",
-    "version": "9.1.0",
+    "version": "9.1.1",
     "description": "Haxball headless bot",
     "main": "dist/main.js",
     "scripts": {
@@ -16,6 +16,7 @@
     },
     "dependencies": {
         "express": "^5.2.1",
+        "express-session": "^1.19.0",
         "haxball.js": "^4.0.3",
         "pug": "^3.0.4",
         "puppeteer-core": "^25.4.0"

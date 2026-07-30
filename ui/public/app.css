@@ -63,7 +63,8 @@ input[type="radio"] {
     height: 16px;
 }
 
-form input[type="text"] {
+form input[type="text"],
+form input[type="password"] {
     padding: 0.85rem 1rem;
     background: rgba(5, 2, 8, 0.6);
     border: 1px solid rgba(139, 92, 246, 0.12);

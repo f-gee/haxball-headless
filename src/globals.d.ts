@@ -23,6 +23,8 @@ declare const process: {
         SAVED_ADMIN_AUTHS_URL: string; // https://yourfile.json
         STADIUMS_URL: string; // https://yourfile.json
         KITS_URL: string; // https://yourfile.json
+        UI_SESSION_SECRET: string;
+        UI_AUTH_USERS: string; // format: [username1]:[password1],[username2]:[password2]
         DEV_HB_TOKEN: string; // thr1..
         HB_ROOM_NAME: string; // your room name 
         HB_ROOM_GEO?: string; // { "code": "TR", "lat": 12.34, "lon": 56.78 } (optional)

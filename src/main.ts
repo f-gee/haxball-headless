@@ -227,7 +227,7 @@ room.onRoomLink = async (url: string) => {
                 "embeds": [
                     {
                         "title": gameManager.roomParams.roomName || "room name",
-                        "description": "created haxball room.",
+                        "description": "haxball room is up",
                         "color": 0x92FF0E,
                         "footer": {
                             "text": `bot v${__BOT_VERSION__} / ${gameManager.roomParams.public ? 'public' : 'private'} / ${gameManager.roomParams.maxPlayers}p`,

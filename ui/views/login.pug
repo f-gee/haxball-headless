@@ -1,0 +1,18 @@
+doctype html
+html
+  head
+    title Login
+    meta(charset="UTF-8")
+    link(rel="stylesheet" href="/app.css")
+  body
+    h1 Login
+    if error
+      p(style="color:red")= error
+    form(method="POST" action="/login")
+      div
+        label Username
+        input(type="text" name="username" required)
+      div
+        label Password
+        input(type="password" name="password" required)
+      button(type="submit") Log in

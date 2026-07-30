@@ -107,7 +107,7 @@ export class CommandManager {
 			return;
 		}
 		const result = await this.executeCommand(parseResult);
-		console.log("commandResult = " + util.variableToString(result));
+		//console.log("commandResult = " + util.variableToString(result));
 		if (!result.ok) {
 			if (result.error) {
 				util.pm(player, result.error, "error");
@@ -172,13 +172,15 @@ commandManager.registerCommand({
 		return { ok: true };
 	}
 });
-commandManager.registerCommand({
-	name: "discord", category: "utility", helpStrings: ["shows discord invite link"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
-	execute: (player, args) => {
-		util.say(`Discord adresimiz: ${process.env.DISCORD_INVITE_URL}`);
-		return { ok: true };
-	}
-});
+if (process.env.DISCORD_INVITE_URL) {
+	commandManager.registerCommand({
+		name: "discord", category: "utility", helpStrings: ["shows discord invite link"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
+		execute: (player, args) => {
+			util.say(`Discord adresimiz: ${process.env.DISCORD_INVITE_URL}`);
+			return { ok: true };
+		}
+	});
+}
 commandManager.registerCommand({
 	name: "eval", category: "utility", helpStrings: [".eval [code]"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
 	execute: (player, args) => {
