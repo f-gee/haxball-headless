@@ -31,4 +31,3 @@ npm install
 ## TODO
 - Write example JSON data files
 - Check default admin passwords
-- implement recentPlayers

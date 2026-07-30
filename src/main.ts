@@ -154,7 +154,9 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
         chatMutedUntil: now,
         chatLastTimestamp: now,
         chatSpamTickets: 0,
-        afkGamesCount: 0
+        afkGamesCount: 0,
+        totalGames: 0,
+        totalWins: 0
     };
     playerManager.addPlayer(player);
     const foundAdmin = gameManager.savedAdminAuths.data.find((a: { auth: string; }) => a.auth === vanillaPlayer.auth);
@@ -175,9 +177,13 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
         util.messageDevelopers(`Sent welcome message: ${gameManager.welcomeMessage}`);
     }
     util.setAutoCapacityPassword();
+    playerManager.restoreRecentPlayer(player);
     await balancing.balanceTeamsWithTimeout(1000);
 };
 room.onPlayerLeave = async (vanillaPlayer: VanillaPlayer) => {
+    const player = playerManager.all.get(vanillaPlayer.id);
+    if (!player) return;
+    playerManager.saveRecentPlayer(player);
     playerManager.removePlayer(vanillaPlayer.id);
     util.setAutoCapacityPassword();
     await balancing.balanceTeamsWithTimeout(1000);

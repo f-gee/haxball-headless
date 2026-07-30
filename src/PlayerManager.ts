@@ -1,5 +1,5 @@
 import { util } from "./util";
-import { room } from "./GameManager";
+import { gameManager, room } from "./GameManager";
 export interface Player {
     team: number;
     isAfk: boolean;
@@ -20,7 +20,22 @@ export interface Player {
     chatLastTimestamp: Date;
     chatSpamTickets: number;
     afkGamesCount: number;
+    totalGames: number;
+    totalWins: number;
 }
+
+export interface RecentPlayer {
+    id: number;
+    name: string;
+    conn: string;
+    auth: string;
+    elo: number;
+    lastActivity: Date;
+    chatMutedUntil: Date;
+    totalGames: number;
+    totalWins: number;
+}
+
 export interface VanillaPlayer {
     id: number;
     name: string;
@@ -151,7 +166,7 @@ class PlayerManager {
         }
         await playerManager.movePlayerToTeam(player, 0);
     }
-    getByQuery(query: string): Player | null {
+    public getByQuery(query: string): Player | null {
         const lower = query.toLocaleLowerCase();
 
         // 1) exact ID match (fastest)
@@ -171,6 +186,48 @@ class PlayerManager {
         }
 
         return null; // not found
+    }
+    public saveRecentPlayer(player: Player) {
+        const findRecentPlayer = gameManager.recentPlayers.find(x => x.auth === player.auth);
+        if (findRecentPlayer) {
+            findRecentPlayer.name = player.name;
+            findRecentPlayer.elo = player.elo;
+            findRecentPlayer.lastActivity = player.lastActivity;
+            findRecentPlayer.chatMutedUntil = player.chatMutedUntil;
+            findRecentPlayer.totalGames = player.totalGames;
+            findRecentPlayer.totalWins = player.totalWins;
+        } else {
+            const recentPlayer: RecentPlayer = {
+                id: player.id,
+                name: player.name,
+                conn: player.conn,
+                auth: player.auth,
+                elo: player.elo,
+                lastActivity: player.lastActivity,
+                chatMutedUntil: player.chatMutedUntil,
+                totalGames: player.totalGames,
+                totalWins: player.totalWins,
+            }
+            gameManager.recentPlayers.push(recentPlayer);
+            gameManager.recentPlayers = gameManager.recentPlayers.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
+            if (gameManager.recentPlayers.length > 50) {
+                gameManager.recentPlayers.pop();
+            }
+        }
+    }
+    public restoreRecentPlayer(player: Player) {
+        const findRecentPlayer = gameManager.recentPlayers.find(x => x.auth === player.auth);
+        if (findRecentPlayer) {
+            player.elo = findRecentPlayer.elo;
+            player.chatMutedUntil = findRecentPlayer.chatMutedUntil;
+            player.totalGames = findRecentPlayer.totalGames;
+            player.totalWins = findRecentPlayer.totalWins;
+            const minutesSinceLastSeen = Math.ceil((Date.now() - findRecentPlayer.lastActivity.getTime()) / 60000);
+            util.messageAdmins(`${player.name} was last seen ${minutesSinceLastSeen} minutes ago`);
+            if (findRecentPlayer.name !== player.name) {
+                util.messageAdmins(`${player.name}'s old name was ${findRecentPlayer.name}`);
+            }
+        }
     }
 }
 export const playerManager = new PlayerManager();
