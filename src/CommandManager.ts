@@ -336,6 +336,42 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
+	name: "list", category: "security", helpStrings: [".list admins / superadmins / developers / afks"], minArguments: 1, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
+	execute: (player, args) => {
+		switch (args[0]) {
+			case "admins":
+				if (!player.isAdmin) { return { ok: false, error: "You are not admin" }; }
+				const admins = Array.from(playerManager.admins).map(p => p.name);
+				if (admins.length === 0) {
+					return { ok: false, error: "No admins found" };
+				}
+				return { ok: true, info: `Admins: ${admins.join(", ")}` };
+			case "superadmins":
+				if (!player.isSuperAdmin) { return { ok: false, error: "You are not super admin" }; }
+				const superadmins = Array.from(playerManager.superAdmins).map(p => p.name);
+				if (superadmins.length === 0) {
+					return { ok: false, error: "No super admins found" };
+				}
+				return { ok: true, info: `Super admins: ${superadmins.join(", ")}` };
+			case "developers":
+				if (!player.isSuperAdmin) { return { ok: false, error: "You are not super admin" }; }
+				const developers = Array.from(playerManager.developers).map(p => p.name);
+				if (developers.length === 0) {
+					return { ok: false, error: "No developers found" };
+				}
+				return { ok: true, info: `Developers: ${developers.join(", ")}` };
+			case "afks":
+				const afks = Array.from(playerManager.afks).map(p => p.name);
+				if (afks.length === 0) {
+					return { ok: false, error: "No AFKs found" };
+				}
+				return { ok: true, info: `AFKs: ${afks.join(", ")}` };
+			default:
+				return { ok: false, error: "Invalid argument. Use admins, superadmins, developers or afks" };
+		}
+	}
+});
+commandManager.registerCommand({
 	name: "promote", category: "security", helpStrings: [".promote [player] admin / superadmin / dev: promote a player to admin"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: (player, args) => {
 		const [playerQuery, rank] = args;
@@ -698,8 +734,10 @@ commandManager.registerCommand({
 		if (p1.id === p2.id) return { ok: false, error: "Two players cannot be the same" };
 		if (p1.isAfk || p2.isAfk) return { ok: false, error: "One of the players is AFK" };
 		if (p1.team === p2.team) return { ok: false, error: "Players must be on different teams" };
-		await playerManager.movePlayerToTeam(p1, p2.team);
-		await playerManager.movePlayerToTeam(p2, p1.team);
+		const p1Team = p1.team;
+		const p2Team = p2.team;
+		await playerManager.movePlayerToTeam(p1, p2Team);
+		await playerManager.movePlayerToTeam(p2, p1Team);
 		//await balancing.balanceTeamsWithTimeout(500);
 		return { ok: true, announce: `${player.name} swapped ${p1.name} and ${p2.name}` };
 	}

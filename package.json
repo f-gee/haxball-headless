@@ -19,6 +19,6 @@
         "express-session": "^1.19.0",
         "haxball.js": "^4.0.3",
         "pug": "^3.0.4",
-        "puppeteer-core": "^25.4.0"
+        "puppeteer": "^25.4.0"
     }
 }

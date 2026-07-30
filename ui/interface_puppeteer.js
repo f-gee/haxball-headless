@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const puppeteer = require("puppeteer-core");
+//const puppeteer = require("puppeteer-core");
+const puppeteer = require("puppeteer");
 
 let browser = null;
 let page = null;
@@ -38,7 +39,8 @@ const getOrLaunchBrowser = async () => {
                 "--disable-web-security",
                 "--allow-running-insecure-content",
                 "--disable-features=BlockInsecurePrivateNetworkRequests",
-                "--disable-dev-shm-usage"
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
             ]
         });
         return browser;
