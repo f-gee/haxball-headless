@@ -175,7 +175,9 @@ export const util = {
                 method: "PATCH",
                 body: JSON.stringify({ "content": `**Oda şifresi:** ${password}` }),
                 headers: { "Content-Type": "application/json", },
-            })
+            }).catch((err) => {
+                util.debugLog("Discord room password update failed: " + (err instanceof Error ? err.message : String(err)));
+            });
         } else {
             util.messageAdmins(`ℹ️ Room password cleared.`);
         }

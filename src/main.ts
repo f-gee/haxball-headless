@@ -18,8 +18,7 @@ if (process.env.NODE_ENV !== "production") {
 room.onGamePause = (byPlayer: VanillaPlayer) => {
     if (byPlayer) {
         util.pm(byPlayer, `Oyun 30 saniye sonra devam edecek`, "info");
-        gameManager.timers.unpauseTimer = setTimeout(() => { room.pauseGame(false) }, 30000);
-        //data.miscStuff.manualUnpauseTimer = setTimeout(() => { room.pauseGame(false) }, 30000);
+        gameManager.timers.unpauseTimer = setTimeout(() => { gameManager.pauseTheGame(false); }, 30000);
     }
     gameManager.isGamePaused = true;
     // if (gameManager.isTrackingAFKs) {
@@ -168,13 +167,19 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
             playerManager.setAdmin(player, true);
         }
     }
-    // room.sendAnnouncement(`Hello ${vanillaPlayer.name}`);
-    // room.setPlayerAdmin(vanillaPlayer.id, true);
-    // playerManager.setDeveloper(player, true);
+    if (gameManager.stadiums.currentStadiumMessage && gameManager.stadiums.currentStadiumMessage.length) {
+        util.pm(player, `${player.name}, map info: ${gameManager.stadiums.currentStadiumMessage}`);
+    }
+    if (gameManager.welcomeMessage && gameManager.welcomeMessage.length) {
+        util.pm(player, `${gameManager.welcomeMessage}`, "info");
+        util.messageDevelopers(`Sent welcome message: ${gameManager.welcomeMessage}`);
+    }
+    util.setAutoCapacityPassword();
     await balancing.balanceTeamsWithTimeout(1000);
 };
 room.onPlayerLeave = async (vanillaPlayer: VanillaPlayer) => {
     playerManager.removePlayer(vanillaPlayer.id);
+    util.setAutoCapacityPassword();
     await balancing.balanceTeamsWithTimeout(1000);
 };
 room.onPlayerKicked = (vanillaPlayer: VanillaPlayer, reason: string, ban: boolean, byPlayer?: any) => {

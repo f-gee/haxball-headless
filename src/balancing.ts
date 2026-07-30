@@ -198,12 +198,10 @@ export const balancing = {
             await balancing.reorderSpecs();
             util.pm(playerToMove, "Takımlar dengesiz olduğu için geçici olarak spece alındınız");
         }
-        if (gameManager.isGamePaused /*&& !(data.miscStuff.manualUnpauseTimer)*/) {
-            room.pauseGame(false);
+        if (gameManager.isGamePaused) {
+            gameManager.pauseTheGame(false);
         }
         if (!gameManager.isGameGoingOn && (!gameManager.timers.startTimer || gameManager.gameEndAutoStart)) {
-            //room.startGame();
-            //util.debugLog("game will start in 3 seconds");
             gameManager.timers.startTimer = setTimeout(room.startGame, 3000);
         }
     },
@@ -214,7 +212,7 @@ export const balancing = {
             //bcLog(`CAP: ${totalActivePlayers} active players, auto-balancing..`);
             await balancing.balanceTeams();
             if (gameManager.gameEndAutoStart || !gameManager.timers.startTimer) { gameManager.timers.startTimer = setTimeout(room.startGame, 1000); }
-            if (gameManager.isGamePaused /*&& (!data.miscStuff.manualUnpauseTimer)*/) { room.pauseGame(false); }
+            if (gameManager.isGamePaused) { gameManager.pauseTheGame(false); }
             gameManager.lastTeamThatPicked = 2;
             balancing.clearCaptainPrompt();
             return;
@@ -272,7 +270,7 @@ export const balancing = {
         if (absSurplus === 0 && playerManager.activeSpectators.size === 0) {
             //bcLog(`Teams are equal and no specs left. Starting game..`);
             if (gameManager.gameEndAutoStart || !gameManager.timers.startTimer) { gameManager.timers.startTimer = setTimeout(room.startGame, 1000); }
-            if (gameManager.isGamePaused /*&& (!data.miscStuff.manualUnpauseTimer)*/) { room.pauseGame(false); }
+            if (gameManager.isGamePaused) { gameManager.pauseTheGame(false); }
             gameManager.lastTeamThatPicked = 2;
             balancing.clearCaptainPrompt();
             return;
@@ -289,7 +287,7 @@ export const balancing = {
                 secondSpec.restoreTeam = 0;
             }
             if (gameManager.gameEndAutoStart || !gameManager.timers.startTimer) { gameManager.timers.startTimer = setTimeout(room.startGame, 1000); }
-            if (gameManager.isGamePaused /*&& (!data.miscStuff.manualUnpauseTimer)*/) { room.pauseGame(false); }
+            if (gameManager.isGamePaused) { gameManager.pauseTheGame(false); }
             gameManager.lastTeamThatPicked = 2;
             balancing.clearCaptainPrompt();
             return;
@@ -304,7 +302,7 @@ export const balancing = {
                 firstSpec.restoreTeam = 0;
             }
             if (gameManager.gameEndAutoStart || !gameManager.timers.startTimer) { gameManager.timers.startTimer = setTimeout(room.startGame, 1000); }
-            if (gameManager.isGamePaused /*&& (!data.miscStuff.manualUnpauseTimer)*/) { room.pauseGame(false); }
+            if (gameManager.isGamePaused) { gameManager.pauseTheGame(false); }
             gameManager.lastTeamThatPicked = 2;
             balancing.clearCaptainPrompt();
             return;
@@ -323,7 +321,7 @@ export const balancing = {
                 await playerManager.movePlayerToTeam(player, smallTeamId);
             });
             if (gameManager.gameEndAutoStart || !gameManager.timers.startTimer) { gameManager.timers.startTimer = setTimeout(room.startGame, 1000); }
-            if (gameManager.isGamePaused /*&& (!data.miscStuff.manualUnpauseTimer)*/) { room.pauseGame(false); }
+            if (gameManager.isGamePaused) { gameManager.pauseTheGame(false); }
             gameManager.lastTeamThatPicked = 2;
             balancing.clearCaptainPrompt();
             return;
@@ -343,7 +341,7 @@ export const balancing = {
         // check if teams are perfect:
         if (playerManager.red.size === gameManager.teamCaps.red && playerManager.blue.size === gameManager.teamCaps.blue) {
             if (gameManager.gameEndAutoStart || !gameManager.timers.startTimer) { gameManager.timers.startTimer = setTimeout(room.startGame, 1000); }
-            if (gameManager.isGamePaused /*&& (!data.miscStuff.manualUnpauseTimer)*/) { room.pauseGame(false); }
+            if (gameManager.isGamePaused) { gameManager.pauseTheGame(false); }
             gameManager.lastTeamThatPicked = 2;
             balancing.clearCaptainPrompt();
             return;
@@ -361,7 +359,7 @@ export const balancing = {
             //bcLog("no specs left, starting the game");
             //if (data.miscStuff.gameEndAutoStart || !data.miscStuff.startTimer) { data.miscStuff.startTimer = setTimeout(room.startGame, 1000); }
             gameManager.timers.startTimer = setTimeout(room.startGame, 1000);
-            if (gameManager.isGamePaused /*&& (!data.miscStuff.manualUnpauseTimer)*/) { room.pauseGame(false); }
+            if (gameManager.isGamePaused) { gameManager.pauseTheGame(false); }
             gameManager.lastTeamThatPicked = 2;
             balancing.clearCaptainPrompt();
             return;
@@ -376,7 +374,7 @@ export const balancing = {
     promptCaptain(teamId: number) {
         const captain = teamId === 1 ? playerManager.red.values().next().value : playerManager.blue.values().next().value;
         if (!captain) { return }
-        room.pauseGame(true);
+        gameManager.pauseTheGame(true);
         util.pm(captain, `${captain.name}, oyuncu seçme sırası sizde! İsim ya da sayı yazabilirsiniz`);
         room.sendAnnouncement("" + room.getPlayerList()
             .filter((x: VanillaPlayer) => {

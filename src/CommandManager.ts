@@ -42,6 +42,7 @@ export class CommandManager {
 			"b": "blue",
 			"bal": "balance",
 			"dc": "discord",
+			"load": "map"
 		};
 	}
 	// registerAlias(alias: string, name: string) {
@@ -209,7 +210,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "get", category: "utility", helpStrings: [".get [varName]: shows the value of a parameter", "possible values: captainmode, autobalance, forceequalteams, password, captcha"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	name: "get", category: "utility", helpStrings: [".get [varName]: shows the value of a parameter", "possible values: captainmode, autobalance, forceequalteams, password, captcha, teams, autopassword"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		let targetVariable: any;
 		let varName = args[0];
@@ -252,13 +253,10 @@ commandManager.registerCommand({
 				break;
 			case "teams":
 			case "teamcaps":
-				const inputArray = args[1].split("v").map((v) => parseInt(v));
-				if (inputArray.length !== 2 || isNaN(inputArray[0]) || isNaN(inputArray[1])) {
-					return { ok: false, error: "Invalid team caps format. Use [red]v[blue] format" };
-				}
-				const result = await gameManager.changeTeamCaps(inputArray[0], inputArray[1]);
-				util.say(`Team caps changed to ${result} (by ${player.name})`);
-				return { ok: true };
+				return { ok: true, info: `Teams mode: ${gameManager.teamCaps.red}v${gameManager.teamCaps.blue}` };
+			case "autopassword":
+				targetVariable = gameManager.autoPasswordCapacity;
+				break;
 			default:
 				return { ok: false, error: "Invalid variable name" };
 		}
@@ -268,36 +266,53 @@ commandManager.registerCommand({
 commandManager.registerCommand({
 	name: "set", category: "utility", helpStrings: [".set [varName] [value]: sets the value of a parameter", "for possible varNames: type .help get"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
-		let targetVariable: any;
 		const varName = args[0];
 		const newValue = args[1];
+		let outputValue: any;
 		switch (varName) {
 			case "captainmode":
-				gameManager.captainMode = util.parseBoolean(newValue, false);
+				outputValue = gameManager.captainMode = util.parseBoolean(newValue, false);
 				await balancing.balanceTeamsWithTimeout(500);
 				break;
 			case "autobalance":
-				gameManager.autoBalance = util.parseBoolean(newValue, true);
+				outputValue = gameManager.autoBalance = util.parseBoolean(newValue, true);
 				await balancing.balanceTeamsWithTimeout(500);
 				break;
 			case "et":
 			case "equalteams":
 			case "forceequalteams":
-				gameManager.forceEqualTeams = util.parseBoolean(newValue, false);
+				outputValue = gameManager.forceEqualTeams = util.parseBoolean(newValue, false);
 				await balancing.balanceTeamsWithTimeout(500);
 				break;
 			case "password":
 				const isPasswordOn = util.parseBoolean(newValue, false);
-				util.setRoomPassword(isPasswordOn ? newValue : null);
+				outputValue = isPasswordOn ? newValue : null;
+				util.setRoomPassword(outputValue);
 				break;
 			case "captcha":
-				gameManager.captcha = util.parseBoolean(newValue, false);
-				room.setRequireRecaptcha(gameManager.captcha)
+				outputValue = gameManager.captcha = util.parseBoolean(newValue, false);
+				room.setRequireRecaptcha(outputValue)
+				break;
+			case "teams":
+			case "teamcaps":
+				const inputArray = args[1].split("v").map((v) => parseInt(v));
+				if (inputArray.length !== 2 || isNaN(inputArray[0]) || isNaN(inputArray[1])) {
+					return { ok: false, error: "Invalid team caps format. Use [red]v[blue] format" };
+				}
+				outputValue = await gameManager.changeTeamCaps(inputArray[0], inputArray[1]);
+				util.say(`Team caps changed to ${outputValue} (by ${player.name})`);
+				return { ok: true };
+			case "autopassword":
+				const maxPlayers = parseInt(newValue);
+				if (isNaN(maxPlayers) || maxPlayers < 0) {
+					return { ok: false, error: "Invalid number" };
+				}
+				outputValue = gameManager.autoPasswordCapacity = maxPlayers;
 				break;
 			default:
 				return { ok: false, error: "Invalid variable name" };
 		}
-		util.messageAdmins(`${player.name} set ${varName} = ${util.variableToString(targetVariable)}`);
+		util.messageAdmins(`${player.name} set ${varName} = ${util.variableToString(outputValue)}`);
 		return { ok: true };
 	}
 });
@@ -333,21 +348,21 @@ commandManager.registerCommand({
 				return { ok: false, error: `${targetPlayer.name} is already admin` };
 			}
 			playerManager.setAdmin(targetPlayer, true);
-			return { ok: true, info: `You promoted ${targetPlayer.name} to admin` };
+			return { ok: true, info: `You promoted ${targetPlayer.id === player.id ? "yourself" : targetPlayer.name} to admin` };
 		}
 		if (player.isSuperAdmin && rank === "superadmin") {
 			if (targetPlayer.isSuperAdmin) {
 				return { ok: false, error: `${targetPlayer.name} is already super admin` };
 			}
 			playerManager.setSuperAdmin(targetPlayer, true);
-			return { ok: true, info: `You promoted ${targetPlayer.name} to super admin` };
+			return { ok: true, info: `You promoted ${targetPlayer.id === player.id ? "yourself" : targetPlayer.name} to super admin` };
 		}
 		if (player.isSuperAdmin && rank === "dev") {
 			if (targetPlayer.isDeveloper) {
 				return { ok: false, error: `${targetPlayer.name} is already developer` };
 			}
 			playerManager.setDeveloper(targetPlayer, true);
-			return { ok: true, info: `You promoted ${targetPlayer.name} to developer` };
+			return { ok: true, info: `You promoted ${targetPlayer.id === player.id ? "yourself" : targetPlayer.name} to developer` };
 		}
 		return { ok: false, error: "Invalid rank" };
 	}
@@ -471,17 +486,74 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
+	name: "stop", category: "game", helpStrings: [".stop: stops the game"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		room.stopGame();
+		gameManager.timers.startTimer = setTimeout(room.startGame, 60000);
+		return { ok: true, announce: `Game stopped by ${player.name}, it will start in 60 seconds` };
+	}
+});
+commandManager.registerCommand({
+	name: "start", category: "game", helpStrings: [".start: starts the game"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		room.startGame();
+		if (gameManager.timers.startTimer) clearTimeout(gameManager.timers.startTimer);
+		return { ok: true, announce: `Game started by ${player.name}` };
+	}
+});
+commandManager.registerCommand({
+	name: "restart", category: "game", helpStrings: [".start: starts the game"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		room.stopGame();
+		util.sleep(500);
+		room.startGame();
+		if (gameManager.timers.startTimer) clearTimeout(gameManager.timers.startTimer);
+		return { ok: true, announce: `Game restarted by ${player.name}` };
+	}
+});
+commandManager.registerCommand({
 	name: "pause", category: "game", helpStrings: [".pause: pauses / unpauses the game"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		gameManager.isGamePaused = !gameManager.isGamePaused;
 		if (gameManager.isGamePaused) {
-			room.pauseGame(true);
-			util.say("Game paused by " + player.name);
-			return { ok: true };
+			gameManager.pauseTheGame(true);
+			return { ok: true, announce: `Game paused by ${player.name}` };
 		} else {
-			room.pauseGame(false);
-			util.say("Game resumed by " + player.name);
-			return { ok: true };
+			gameManager.pauseTheGame(false);
+			return { ok: true, announce: `Game resumed by ${player.name}` };
+		}
+	}
+});
+commandManager.registerCommand({
+	name: "map", category: "game", helpStrings: [".map: shows list of stadiums", ".map [map]: changes the stadium"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		if (!args.length) {
+			return { ok: true, info: gameManager.stadiums.data.map(x => x.name).join(", ") }
+		} else {
+			const targetStadium = gameManager.stadiums.data.find(x => x.name.toLocaleLowerCase().includes(args.join(" ").toLocaleLowerCase()));
+			if (!targetStadium) {
+				return { ok: false, error: "Stadium not found" }
+			}
+			gameManager.stadiums.selectedStadiumName = targetStadium.name;
+			gameManager.stadiums.currentStadiumMessage = targetStadium.m;
+			const teamCaps = [targetStadium.t[0], targetStadium.t[1]];
+			if (teamCaps && teamCaps.length == 2) {
+				gameManager.changeTeamCaps(teamCaps[0], teamCaps[1]);
+			}
+			room.stopGame();
+			util.sleep(500);
+			let hbs = targetStadium["hbs"];
+			if (typeof hbs !== "string") {
+				targetStadium["hbs"] = hbs = JSON.stringify(hbs);
+			}
+			await room.setCustomStadium(hbs);
+			if (targetStadium.m && targetStadium.m.length) {
+				util.say(targetStadium.m);
+			}
+			util.sleep(500);
+			room.startGame();
+			if (gameManager.timers.startTimer) clearTimeout(gameManager.timers.startTimer);
+			return { ok: true, announce: `Stadium changed to ${targetStadium.name} by ${player.name}` }
 		}
 	}
 });

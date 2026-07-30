@@ -7,16 +7,23 @@ interface SavedAdminData {
     description: string;
     auth: string;
 }
+interface Stadium {
+    name: string;
+    m: string; // stadium message
+    t: number[]; // teamCaps: red, blue
+    hbs: object | string;
+}
 
 export class GameManager {
     public roomParams: any;
-    public adminPasswords: string[] = ["admin1", "admin2"];
+    public adminPasswords: string[] = ["addmin1", "addmin2"];
     public superAdminPasswords: string[] = ["sa1", "sa2"];
     public developerPasswords: string[] = ["dp1", "dp2"];
     public savedAdminAuths: { data: SavedAdminData[], url: string } = { data: [], url: process.env.SAVED_ADMIN_AUTHS_URL };
-    public stadiums: { data: unknown, url: string, currentStadiumMessage: string } = { data: [], url: process.env.STADIUMS_URL, currentStadiumMessage: "" };
-    public kits: { data: unknown, url: string, selectedKitId: number } = { data: [], url: process.env.KITS_URL, selectedKitId: 0 };
     public blockNewTab: boolean = process.env.NODE_ENV === "development" ? false : true;
+    public stadiums: { data: Stadium[], url: string, selectedStadiumName: string, currentStadiumMessage: string } = { data: [], url: process.env.STADIUMS_URL, selectedStadiumName: "default", currentStadiumMessage: "" };
+    public kits: { data: unknown, url: string, selectedKitId: number } = { data: [], url: process.env.KITS_URL, selectedKitId: 0 };
+    public welcomeMessage: string = "";
     public teamCaps: { red: number, blue: number, spec: number } = { red: 4, blue: 4, spec: 99 };
     public autoBalance: boolean = true;
     public forceEqualTeams: boolean = false;
@@ -75,25 +82,39 @@ export class GameManager {
     }
 
     async changeTeamCaps(red: number, blue: number) {
-        const oldTeamCaps = { ...this.teamCaps };
         this.teamCaps.red = red;
         this.teamCaps.blue = blue;
-        if (oldTeamCaps.red > red) {
+        if (playerManager.red.size > red) {
             // spec surplus red players
-            const surplusRedPlayers = util.getRandomFromSetMultiple(playerManager.red, oldTeamCaps.red - red);
+            const surplusRedPlayers = util.getRandomFromSetMultiple(playerManager.red, playerManager.red.size - red);
             for (const player of surplusRedPlayers) {
                 await playerManager.movePlayerToTeam(player, 0);
             }
         }
-        if (oldTeamCaps.blue > blue) {
+        if (playerManager.blue.size > blue) {
             // spec surplus blue players
-            const surplusBluePlayers = util.getRandomFromSetMultiple(playerManager.blue, oldTeamCaps.blue - blue);
+            const surplusBluePlayers = util.getRandomFromSetMultiple(playerManager.blue, playerManager.blue.size - blue);
             for (const player of surplusBluePlayers) {
                 await playerManager.movePlayerToTeam(player, 0);
             }
         }
         await balancing.balanceTeamsWithTimeout(1000);
         return `${red}v${blue}`;
+    }
+    pauseTheGame(pauseState: boolean) {
+        if (!this.isGameGoingOn) {
+            if (this.timers.unpauseTimer) clearTimeout(this.timers.unpauseTimer);
+            return
+        }
+        room.pauseGame(pauseState);
+        this.isGamePaused = pauseState;
+        if (pauseState) {
+            const nSeconds = 30;
+            util.say(`Game will resume in ${nSeconds} seconds`);
+            this.timers.unpauseTimer = setTimeout(() => { this.pauseTheGame(false); }, nSeconds * 1000);
+        } else {
+            if (this.timers.unpauseTimer) clearTimeout(this.timers.unpauseTimer);
+        }
     }
 }
 // roomName: string = "Haxball Room", maxPlayers: number = 12, isPublic: boolean = false
