@@ -31,7 +31,18 @@ async function closeRoom() {
     return { ok: true, message: "room closed" };
 }
 
-function fEval(scr, ctx) { return (new Function("with(this) { return " + scr + "}")).call(ctx); }
+//function fEval(scr, ctx) { return (new Function("with(this) { return " + scr + "}")).call(ctx); }
+//function fEval(scr, ctx) { return (new Function("with(this) { return (function(){ " + scr + " })() }")).call(ctx); }
+// function fEval(scr, ctx) {
+//     return (function () {
+//         with (this) {
+//             return eval(scr);
+//         }
+//     }).call(ctx);
+// }
+function fEval(scr, ctx) {
+    return (new Function("with(this) { return eval(arguments[0]); }")).call(ctx, scr);
+}
 
 async function safeEvaluate(code) {
     try {

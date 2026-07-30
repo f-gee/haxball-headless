@@ -1,3 +1,11 @@
+process.on("unhandledRejection", (reason) => {
+    console.error("Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+    console.error("Uncaught Exception:", err);
+});
+
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
@@ -122,18 +130,18 @@ app.post('/eval', async (req, res) => {
     const { code } = req.body;
     let result;
     try {
+        let evalResult;
         if (state.mode === "puppeteer") {
-            //result = await state.page.evaluate(`(${code})()`);
-            //result = await state.page.evaluate(code);
-            result = await puppeteerManager.safeEvaluate(code);
-            if (!result.ok) {
-                return res.json({ result: `Evaluation error: ${result.error.message}\n${result.error.stack}` });
-            }
-            result = result.value;
+            evalResult = await puppeteerManager.safeEvaluate(code);
         } else {
-            result = await haxballJsManager.safeEvaluate(code); // has access to state.room in this scope
-            result = result.value;
+            evalResult = await haxballJsManager.safeEvaluate(code);
         }
+
+        if (!evalResult.ok) {
+            console.log("EVAL ERROR:", evalResult.error);
+            return res.json({ result: `Evaluation error: ${evalResult.error}` });
+        }
+        result = evalResult.value;
         result = typeof result === 'object' ? JSON.stringify(result) : String(result);
     } catch (err) {
         result = `Error: ${err.message}`;

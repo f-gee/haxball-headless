@@ -25,7 +25,7 @@ esbuild.build({
     define: {
         "process.env.NODE_ENV": '"development"',
         ...envDefine, // Spread all dynamically parsed .env variables
-        "process.env.HAXBALL_ENV": JSON.stringify('browser'),
+        "process.env.HAXBALL_PLATFORM": JSON.stringify('browser'),
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
 }).catch(() => process.exit(1));
@@ -46,7 +46,7 @@ esbuild.build({
     define: {
         "process.env.NODE_ENV": '"development"',
         ...envDefine, // Spread all dynamically parsed .env variables
-        "process.env.HAXBALL_ENV": JSON.stringify('puppeteer'),
+        "process.env.HAXBALL_PLATFORM": JSON.stringify('puppeteer'),
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
 }).catch(() => process.exit(1));
@@ -64,7 +64,7 @@ esbuild.build({
     define: {
         "process.env.NODE_ENV": '"development"',
         ...envDefine, // Spread all dynamically parsed .env variables
-        "process.env.HAXBALL_ENV": '"node"',
+        "process.env.HAXBALL_PLATFORM": '"node"',
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
     banner: {
@@ -86,7 +86,7 @@ esbuild.build({
     define: {
         "process.env.NODE_ENV": '"production"',
         ...envDefine, // Spread all dynamically parsed .env variables
-        "process.env.HAXBALL_ENV": '"node"',
+        "process.env.HAXBALL_PLATFORM": '"node"',
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
     banner: {
@@ -108,7 +108,7 @@ esbuild.build({
     define: {
         "process.env.NODE_ENV": '"development"',
         ...envDefine, // Spread all dynamically parsed .env variables
-        "process.env.HAXBALL_ENV": '"node"',
+        "process.env.HAXBALL_PLATFORM": '"node"',
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
     banner: {
@@ -130,7 +130,7 @@ esbuild.build({
     define: {
         "process.env.NODE_ENV": '"production"',
         ...envDefine, // Spread all dynamically parsed .env variables
-        "process.env.HAXBALL_ENV": '"node"',
+        "process.env.HAXBALL_PLATFORM": '"node"',
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
     banner: {

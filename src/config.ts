@@ -19,5 +19,5 @@ export const Config = {
     // discord: {
     //     webhookUrl: process.env.DISCORD_WEBHOOK_URL ?? "",
     // },
-    haxballEnv: process.env.HAXBALL_ENV,
+    //haxballPlatform: process.env.HAXBALL_PLATFORM,
 } as const;

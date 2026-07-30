@@ -13,8 +13,8 @@ export interface Command {
 	needsAdmin: boolean;
 	needsSuperAdmin: boolean;
 	execute: (player: Player, args: string[]) => CommandResult | Promise<CommandResult>; // sync | async
-
 }
+
 interface CommandParseResult {
 	caller: Player;
 	isCommandFound: boolean;
@@ -150,10 +150,19 @@ commandManager.registerCommand({
 			}
 			return { ok: true };
 		} else { // general help
-			const commandList = Object.values(commandManager.commands)
-				.map(c => `.${c.name}`)
-				.join(" ");
-			util.pm(player, `Commands: ${commandList}`);
+			const categories: Command["category"][] = ["chat", "security", "teams", "utility", "game"];
+
+			for (const category of categories) {
+				const names = Object.values(commandManager.commands)
+					.filter(c => c.category === category)
+					.map(c => "." + c.name)
+					.join(" ");
+
+				if (names) {
+					util.pm(player, `[${category}]: ${names}`, "info");
+				}
+			}
+
 			return { ok: true };
 		}
 	}

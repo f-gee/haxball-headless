@@ -20,12 +20,13 @@ npm install
 
 ## Host a room
 ### Using puppeteer or haxball.js:
-  - Run the UI: `node ui/server.js`
+  - Run the UI: `node ui/server.js` or `nohup node ui/server.js > out.log 2>&1 < /dev/null & disown`
   - visit `http://localhost:3001/`
   - select host method and enter your token
 ### In your own browser:
   - Copy and paste `dist/bundle.browser.js` to your browser's console
   - If you use `dist/bundle.browser_dev.js`, it reads the token from .env file, if not, solve the captcha if prompted
+
 
 ## TODO
 - Write example JSON data files

@@ -206,11 +206,21 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
         return false;
     }
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
     fetch(process.env.DISCORD_CHATLOGS_URL, {
         method: "POST",
+        signal: controller.signal,
         body: JSON.stringify({ "content": `**${player.name}:** ${message.replaceAll("@", "[@]")}` }),
         headers: { "Content-Type": "application/json", },
-    });
+    })
+        .catch((err) => {
+            util.debugLog("Discord chatlog failed: " + (err as Error).message);
+        })
+        .finally(() => {
+            clearTimeout(timeout);
+        });
 };// onPlayerChat
 
 room.onRoomLink = async (url: string) => {
@@ -218,7 +228,7 @@ room.onRoomLink = async (url: string) => {
         console.log("onRoomLink: " + url);
         //console.log("room at export time:", typeof room, room);
         //console.log("util at export time:", typeof util, util);
-        if (process.env.HAXBALL_ENV === "node") {
+        if (process.env.HAXBALL_PLATFORM === "node") {
             hjsCallback({ room, util, gameManager, playerManager, commandManager, url });
         }
         await fetch(process.env.DISCORD_ROOMSTATUS_URL, {
@@ -242,7 +252,7 @@ room.onRoomLink = async (url: string) => {
                 "Content-Type": "application/json",
             },
         });
-        if (process.env.NODE_ENV === "development" && process.env.HAXBALL_ENV === "browser") {
+        if (process.env.NODE_ENV === "development" && process.env.HAXBALL_PLATFORM === "browser") {
             window.open(url, '_blank')?.focus();
         }
     } catch (e) {

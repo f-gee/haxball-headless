@@ -14,7 +14,7 @@ declare const hjsCallback: function;
 declare const process: {
     env: {
         NODE_ENV: string; // "production" | "development" (no need to write this in .env, it's set by build.js)
-        HAXBALL_ENV: string; // "browser" | "puppeteer" | "node" (no need to write this in .env, it's set by build.js)
+        HAXBALL_PLATFORM: string; // "browser" | "puppeteer" | "node" (no need to write this in .env, it's set by build.js)
         DISCORD_ROOMSTATUS_URL: string; // https://discord.com/api/webhooks/[webhookId]/[token]/messages/[messageId]?thread_id=[threadId]
         DISCORD_ROOMPASSWORD_URL: string; // https://discord.com/api/webhooks/[webhookId]/[token]/messages/[messageId]?thread_id=[threadId]
         DISCORD_CHATLOGS_URL: string; // https://discord.com/api/webhooks/[webhookId]/[token]?thread_id=[threadId]
