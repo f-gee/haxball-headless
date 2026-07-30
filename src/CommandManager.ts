@@ -558,6 +558,47 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
+	name: "kits", category: "game", helpStrings: [".kits: shows available kits", ".kits [id / name]: changes the kits"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		if (!args.length) { // list kits
+			gameManager.kits.data.forEach((kit, index) => {
+				util.pm(player, `${index}: ${kit._kname}`, "info");
+			});
+			return { ok: true }
+		} else {
+			let selectedKitId, selectedKit: any;
+			const kitQuery = args[0];
+			if (kitQuery === "print") {
+				const ck = gameManager.kits.data[gameManager.kits.selectedKitId];
+				util.pm(player, `Kit Name: '${ck["_kname"]}'`, "info");
+				ck.colors.forEach((x: any) => util.pm(player, `/colors ${x[0] === 1 ? 'red' : 'blue'} ${x[1]} ${x[2].toString(16)} ${x[3].map((a: any) => a.toString(16)).join(' ')}`, "info"));
+				ck.colors.forEach((x: any) => util.pm(player, `room.setTeamColors(${x[0]},${x[1]},0x${x[2].toString(16)},[${x[3].map((a: any) => '0x' + a.toString(16)).join(',')}]);`, "info"));
+				return { ok: true }
+			}
+			const kitId = parseInt(kitQuery);
+			if (!isNaN(kitId) && kitId >= 0 && kitId < gameManager.kits.data.length) {
+				selectedKitId = kitId;
+				selectedKit = gameManager.kits.data[kitId];
+			} else {
+				if (kitQuery === "random") {
+					selectedKitId = Math.floor(Math.random() * gameManager.kits.data.length);
+				} else {
+					selectedKitId = gameManager.kits.data.findIndex(x => x._kname.toLocaleLowerCase().includes(kitQuery.toLocaleLowerCase()));
+				}
+				if (selectedKitId === -1) {
+					return { ok: false, error: "Kit not found" };
+				}
+				selectedKit = gameManager.kits.data[selectedKitId];
+			}
+			//apply kit
+			gameManager.kits.selectedKitId = selectedKitId;
+			room.setTeamColors(...selectedKit.colors[0]);
+			room.setTeamColors(...selectedKit.colors[1]);
+			return { ok: true, announce: `${player.name} changed kits to #${selectedKitId} ${selectedKit._kname}` }
+		}
+	}
+});
+commandManager.registerCommand({
 	name: "afk", category: "teams", helpStrings: [".afk: sets your afk status", ".afk [player]: sets another player's afk status"], minArguments: 0, cooldownSeconds: 10, needsAdmin: false, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		let targetPlayer = player;

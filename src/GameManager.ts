@@ -13,6 +13,10 @@ interface Stadium {
     t: number[]; // teamCaps: red, blue
     hbs: object | string;
 }
+interface Kits {
+    _kname: string;
+    colors: number[];
+}
 
 export class GameManager {
     public roomParams: any;
@@ -22,7 +26,7 @@ export class GameManager {
     public savedAdminAuths: { data: SavedAdminData[], url: string } = { data: [], url: process.env.SAVED_ADMIN_AUTHS_URL };
     public blockNewTab: boolean = process.env.NODE_ENV === "development" ? false : true;
     public stadiums: { data: Stadium[], url: string, selectedStadiumName: string, currentStadiumMessage: string } = { data: [], url: process.env.STADIUMS_URL, selectedStadiumName: "default", currentStadiumMessage: "" };
-    public kits: { data: unknown, url: string, selectedKitId: number } = { data: [], url: process.env.KITS_URL, selectedKitId: 0 };
+    public kits: { data: Kits[], url: string, selectedKitId: number } = { data: [], url: process.env.KITS_URL, selectedKitId: 0 };
     public welcomeMessage: string = "";
     public teamCaps: { red: number, blue: number, spec: number } = { red: 4, blue: 4, spec: 99 };
     public autoBalance: boolean = true;
