@@ -66,6 +66,9 @@ export class GameManager {
         if (token) {
             this.roomParams.token = token;
         }
+        if (process.env.HB_ROOM_GEO) {
+            this.roomParams.geo = JSON.parse(process.env.HB_ROOM_GEO);
+        }
         console.log(`calling HBInit with token: ${token}`);
         const room = HBInit(this.roomParams);
         return room;

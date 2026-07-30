@@ -66,12 +66,8 @@ app.post('/host', async (req, res) => {
         state.mode = mode;
         res.redirect('/');
     } catch (err) {
-        //res.status(500).send(`Failed to host: ${err.message}`);
-        //res.status(500).send(`Failed to host: ${err.message}\n${err.stack}`);
-        res.status(500).json({
-            error: err.message,
-            stack: err.stack,
-        });
+        res.status(500).send(`Failed to host: ${err.message}\n${err.stack}`);
+        //res.status(500).json({ error: err.message, stack: err.stack, });
     }
 });
 
@@ -90,6 +86,7 @@ app.post('/eval', async (req, res) => {
             result = result.value;
         } else {
             result = await haxballJsManager.safeEvaluate(code); // has access to state.room in this scope
+            result = result.value;
         }
         result = typeof result === 'object' ? JSON.stringify(result) : String(result);
     } catch (err) {

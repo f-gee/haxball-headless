@@ -14,11 +14,6 @@ function createRoom(token) {
             try {
                 require(bundlePath)(HBInit, token, (botExports) => {
                     hjsContext = botExports;
-                    //console.log("ctx:");
-                    //console.log(hjsContext);
-                    // console.log("keys:", Object.keys(botExports));
-                    // console.log("room:", botExports.room);
-                    // console.log("util:", typeof botExports.util, botExports.util);
                     resolve(botExports);
                 });
             } catch (err) {
@@ -36,28 +31,15 @@ async function closeRoom() {
     return { ok: true, message: "room closed" };
 }
 
-// async function closeRoom() {
-//     if (!hjsContext || !hjsContext.room) {
-//         throw new Error("No room to close");
-//     }
-//     console.log("Sending close announcement...");
-//     const result = hjsContext.room.sendAnnouncement('🤖 ROOM IS CLOSING! 🤖');
-//     console.log("sendAnnouncement returned:", result);
-//     await delay(5000);
-//     console.log("Delay finished, exiting now.");
-//     process.exit();
-//     return { ok: true, message: "room closed" };
-// }
-
 function fEval(scr, ctx) { return (new Function("with(this) { return " + scr + "}")).call(ctx); }
 
 async function safeEvaluate(code) {
     try {
-        let result = fEval(code, hjsContext);
-        if (result instanceof Promise) {
-            result = await result;
+        let value = fEval(code, hjsContext);
+        if (value instanceof Promise) {
+            value = await value;
         }
-        return { ok: true, result };
+        return { ok: true, value };
     } catch (err) {
         return { ok: false, error: err.message };
     }

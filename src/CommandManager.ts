@@ -183,8 +183,14 @@ commandManager.registerCommand({
 	name: "eval", category: "utility", helpStrings: [".eval [code]"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
 	execute: (player, args) => {
 		const codeToRun = args.join(" ");
+		const fEval = (code: string, ctx: any) => (new Function("with(this) { return " + code + " }")).call(ctx);
 		try {
-			const result = eval(codeToRun);
+			const ctx = Object.assign(
+				Object.create(globalThis), // fall through to all real globals
+				{ player, args, room, util, commandManager } // fill in module-scoped stuff too
+			);
+			const result = fEval(codeToRun, ctx);
+			//return { ok: true, success: result ? util.variableToString(result) : null };
 			return { ok: true, success: util.variableToString(result) };
 		} catch (e) {
 			return { ok: false, error: util.variableToString(e) };
