@@ -106,8 +106,8 @@ app.post('/host', async (req, res) => {
             //state.room = result.room;
             // console.log("room: ");
             // console.log(state.room);
-            console.log("page2: ");
-            console.log(state.page);
+            // console.log("page2: ");
+            // console.log(state.page);
         } else if (mode === 'haxballjs') {
             const result = await haxballJsManager.createRoom(parsedToken);
             state.room = result.room;
