@@ -192,6 +192,19 @@ if (process.env.DISCORD_INVITE_URL) {
 	});
 }
 commandManager.registerCommand({
+	name: "pm", category: "chat", helpStrings: [".pm [player] [message]: sends a private message to the player"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
+	execute: async (player, args) => {
+		const targetPlayerName = args[0];
+		const targetPlayer = await playerManager.getByQuery(targetPlayerName);
+		if (!targetPlayer) { return { ok: false, error: `Player ${targetPlayerName} not found` } }
+		const message = args.slice(1).join(" ");
+		if (!message || !message.length) { return { ok: false, error: "Message cannot be empty" } }
+		if (player.id == targetPlayer.id) { return { ok: false, error: "You cannot send a message to yourself" } }
+		util.pm(targetPlayer, `[PM from ${player.name}]: ${message}`, "whisper");
+		return { ok: true, success: `🗪 [PM to ${targetPlayer.name}]: ${message}` };
+	}
+});
+commandManager.registerCommand({
 	name: "eval", category: "utility", helpStrings: [".eval [code]"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
 	execute: (player, args) => {
 		const codeToRun = args.join(" ");

@@ -49,7 +49,8 @@ const getOrLaunchBrowser = async () => {
 
 async function createRoom(token) {
     try {
-        const bundlePath = path.join(__dirname, '..', 'dist', 'bundle.puppeteer_dev.js');
+        //const bundlePath = path.join(__dirname, '..', 'dist', 'bundle.puppeteer_dev.js');
+        const bundlePath = path.join(__dirname, '..', 'dist', 'bundle.puppeteer_prod.js');
         const botCode = fs.readFileSync(bundlePath, 'utf8');
         const browser = await getOrLaunchBrowser();
         page = await browser.newPage();

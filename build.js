@@ -51,6 +51,23 @@ esbuild.build({
     },
 }).catch(() => process.exit(1));
 
+esbuild.build({
+    entryPoints: ["src/main.ts"],
+    outfile: "dist/bundle.puppeteer_prod.js",
+    bundle: true,
+    minify: true,
+    format: "iife",
+    charset: 'utf8',
+    platform: "browser",
+    target: "es2020",
+    define: {
+        "process.env.NODE_ENV": '"production"',
+        ...envDefine, // Spread all dynamically parsed .env variables
+        "process.env.HAXBALL_PLATFORM": JSON.stringify('puppeteer'),
+        "__BOT_VERSION__": JSON.stringify(pkg.version),
+    },
+}).catch(() => process.exit(1));
+
 /*
 esbuild.build({
     entryPoints: ["src/main.ts"],

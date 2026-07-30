@@ -88,7 +88,7 @@ export const util = {
     say(message: string) {
         room.sendAnnouncement("" + message, null, Config.colors.green);
     },
-    pm(player: Player | VanillaPlayer, message: string, messageType: 'info' | 'error' | 'warning' | 'success' | 'default' = 'default') {
+    pm(player: Player | VanillaPlayer, message: string, messageType: 'info' | 'error' | 'warning' | 'success' | 'whisper' | 'default' = 'default') {
         let color: number | null = null, msgPrefix: string;
         switch (messageType) {
             case 'info':
@@ -106,6 +106,10 @@ export const util = {
             case 'success':
                 color = Config.colors.green;
                 msgPrefix = "✔️";
+                break;
+            case 'whisper':
+                color = Config.colors.pink;
+                msgPrefix = "🗪";
                 break;
             default:
                 msgPrefix = "[PM]";
