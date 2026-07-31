@@ -45,20 +45,25 @@ export const balancing = {
             const winnersChanceToWin = 1 / (1 + Math.pow(10, (losersElo - winnersElo) / 400));
             const eloChange = Math.round(32 * (1 - winnersChanceToWin));
             winnerTeam.forEach(p => {
-                p.totalGames++;
-                p.totalWins++;
                 p.elo += eloChange;
                 util.pm(p, `You gained ${eloChange} Elo, your new score: ${p.elo}`);
-                dbInterface.queueUpdate(p);
             });
             loserTeam.forEach(p => {
-                p.totalGames++;
                 p.elo -= eloChange;
                 util.pm(p, `You lost ${eloChange} Elo, your new score: ${p.elo}`);
-                dbInterface.queueUpdate(p);
             });
 
         }
+        // temp, update DB even if not ranked:
+        winnerTeam.forEach(p => {
+            p.totalGames++;
+            p.totalWins++;
+            dbInterface.queueUpdate(p);
+        });
+        loserTeam.forEach(p => {
+            p.totalGames++;
+            dbInterface.queueUpdate(p);
+        });
         const _now = Date.now();
         // spec losers
         loserTeam.forEach(async p => {
@@ -106,8 +111,9 @@ export const balancing = {
                 util.pm(afkPlayer, `${afkPlayer.name}, you've been AFK for 4 games, you will be kicked if you don't come back`, "warning");
             }
 
-        })
-    },
+        });
+        dbInterface.flushQueue();
+    }, // endGame
     balanceTeamsWithTimeout(duration: number): Promise<void> {
         if (gameManager.timers.balanceTimer) {
             clearTimeout(gameManager.timers.balanceTimer);
