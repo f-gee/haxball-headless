@@ -1,14 +1,15 @@
 import { util } from "./util";
 import { gameManager, room } from "./GameManager";
 export interface Player {
+    id: number;
+    name: string;
     team: number;
     isAfk: boolean;
     isAdmin: boolean;
     isSuperAdmin: boolean;
     isDeveloper: boolean;
     isVip: boolean;
-    id: number;
-    name: string;
+    commandCooldowns: Map<string, number>;
     conn: string;
     auth: string;
     elo: number;
@@ -84,6 +85,7 @@ class PlayerManager {
             this.setFlag(player, "isDeveloper", this.developers, false);
         }
         this.setFlag(player, "isSuperAdmin", this.superAdmins, isSuperAdmin);
+        player.commandCooldowns.clear();
         util.messageSuperAdmins(`${player.name} is ${isSuperAdmin ? "now" : "no longer"} a super admin`);
     }
     public setDeveloper(player: Player, isDeveloper: boolean) {
@@ -98,6 +100,7 @@ class PlayerManager {
         // else if (!isDeveloper && player.isSuperAdmin) {
         //     this.setFlag(player, "isSuperAdmin", this.superAdmins, false);
         // }
+        player.commandCooldowns.clear();
         this.setFlag(player, "isDeveloper", this.developers, isDeveloper);
         util.messageDevelopers(`${player.name} is ${isDeveloper ? "now" : "no longer"} a developer`);
     }
@@ -134,6 +137,21 @@ class PlayerManager {
     public removePlayer(playerId: number) {
         const player = this.all.get(playerId);
         if (!player) return;
+
+        if (gameManager.isGameRanked && gameManager.isGameGoingOn && player.team > 0) {
+            player.elo -= 20;
+            util.say(`⚠️ ${player.name} devam eden maçtan ayrıldığı için 20 Elo puanı silindi. Yeni puanı: ${player.elo}`);
+            gameManager.isGameRanked = false;
+            util.messageAdmins(`Başlangıç kadroları bozuldu. Puanlar kaydedilmeyecek`);
+            //also reward opposite team elo..
+            const winnerGainElo = 5;
+            for (const _p of playerManager[player.team === 1 ? "blue" : "red"]) {
+                _p.elo += winnerGainElo;
+                util.pm(_p, `${player.name} devam eden maçtan ayrıldığı için ${winnerGainElo} Elo puanı kazandınız. Yeni puanınız: ${_p.elo}`, "info");
+                //util.dbUtil.queuePlayerUpdate(_p);
+            }
+        }
+
         this.removeFromTeamSet(player, player.team);
         this.admins.delete(player);
         this.superAdmins.delete(player);
@@ -165,6 +183,21 @@ class PlayerManager {
             this.activeSpectators.add(player);
         }
         await playerManager.movePlayerToTeam(player, 0);
+
+        if (isAfk && gameManager.isGameRanked && gameManager.isGameGoingOn && player.team % 3 !== 0) {
+            player.elo -= 20;
+            util.say(`⚠️ ${player.name} devam eden maçtan ayrıldığı için 20 Elo puanı silindi. Yeni puanı: ${player.elo}`);
+            gameManager.isGameRanked = false;
+            util.messageAdmins(`Başlangıç kadroları bozuldu. Puanlar kaydedilmeyecek`);
+            //also reward opposite team elo..
+            const winnerGainElo = 5;
+            for (const _p of playerManager[player.team === 1 ? "blue" : "red"]) {
+                _p.elo += winnerGainElo;
+                util.pm(_p, `${player.name} devam eden maçtan ayrıldığı için ${winnerGainElo} Elo puanı kazandınız. Yeni puanınız: ${_p.elo}`, "info");
+                //util.dbUtil.queuePlayerUpdate(_p);
+            }
+        }
+
     }
     public getByQuery(query: string): Player | null {
         const lower = query.toLocaleLowerCase();

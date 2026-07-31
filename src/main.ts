@@ -88,6 +88,18 @@ room.onGameStart = async (byPlayer: VanillaPlayer) => {
     gameManager.timers.startTimer = null;
     gameManager.isGameGoingOn = true;
 
+    // check if game is eligible for ranking (elo):
+    {
+        const teamCaps = gameManager.teamCaps;
+        const vanillaGPL = await room.getPlayerList();
+        gameManager.isGameRanked = teamCaps.red === teamCaps.blue && teamCaps.red === playerManager.red.size && teamCaps.blue === playerManager.blue.size;
+        if (gameManager.isGameRanked) {
+            util.messageAdmins(`Maç ${teamCaps.red}v${teamCaps.blue}. Puanlar kaydediliyor`);
+        } else {
+            util.messageAdmins(`Maç ${teamCaps.red}v${teamCaps.blue} değil. Puanlar kaydedilmeyecek`);
+        }
+    }
+
     // if (gameManager.isTrackingAFKs) {
     //     util.resetAFKChecks();
     //     gameManager.timers.afkTrackingInterval = setInterval(util.checkAFKs, 5000);
@@ -136,14 +148,15 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
     }
     const now = new Date();
     const player: Player = {
+        id: vanillaPlayer.id,
+        name: vanillaPlayer.name,
         team: vanillaPlayer.team,
         isAfk: false,
         isAdmin: false,
         isSuperAdmin: false,
         isDeveloper: false,
         isVip: false,
-        id: vanillaPlayer.id,
-        name: vanillaPlayer.name,
+        commandCooldowns: new Map(),
         conn: vanillaPlayer.conn,
         auth: vanillaPlayer.auth,
         elo: 1600,

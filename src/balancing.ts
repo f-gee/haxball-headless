@@ -44,10 +44,13 @@ export const balancing = {
             const winnersChanceToWin = 1 / (1 + Math.pow(10, (losersElo - winnersElo) / 400));
             const eloChange = Math.round(32 * (1 - winnersChanceToWin));
             winnerTeam.forEach(p => {
+                p.totalGames++;
+                p.totalWins++;
                 p.elo += eloChange;
                 util.pm(p, `You gained ${eloChange} Elo, your new score: ${p.elo}`);
             });
             loserTeam.forEach(p => {
+                p.totalGames++;
                 p.elo -= eloChange;
                 util.pm(p, `You lost ${eloChange} Elo, your new score: ${p.elo}`);
             });

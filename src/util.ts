@@ -92,7 +92,7 @@ export const util = {
         let color: number | null = null, msgPrefix: string;
         switch (messageType) {
             case 'info':
-                color = Config.colors.teal;
+                color = Config.colors.pink;//teal;
                 msgPrefix = "ℹ️";
                 break;
             case 'error':

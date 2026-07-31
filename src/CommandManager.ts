@@ -17,7 +17,6 @@ export interface Command {
 
 interface CommandParseResult {
 	caller: Player;
-	isCommandFound: boolean;
 	command: Command | null;
 	commandName: string;
 	args: string[];
@@ -36,7 +35,7 @@ export class CommandManager {
 		this.commandAliases = {
 			"v": "version",
 			"h": "help",
-			"ta": "toggle_admin",
+			"ta": "toggleadmin",
 			"p": "pause",
 			"r": "red",
 			"b": "blue",
@@ -61,7 +60,6 @@ export class CommandManager {
 		const [cmd, ...args] = message.split(" ");
 		const parseResult: CommandParseResult = {
 			caller: player,
-			isCommandFound: false,
 			command: null,
 			commandName: cmd,
 			args: []
@@ -71,7 +69,6 @@ export class CommandManager {
 			command = this.commands[this.commandAliases[cmd]];
 		}
 		if (command) {
-			parseResult.isCommandFound = true;
 			parseResult.command = command;
 			parseResult.args = args;
 		}
@@ -99,13 +96,21 @@ export class CommandManager {
 		//util.debugLog(`${player.name}: ${message}`);
 		//util.messageDevelopers(`${player.name}: ${message}`);
 		const parseResult = this.parseCommandInputs(player, message.substring(1));
-		if (!parseResult.isCommandFound) {
+		if (!parseResult.command) {
 			util.pm(player, `.${parseResult.commandName}: command not found`, "error");
 			return;
 		}
-		if (parseResult.command && parseResult.args.length < parseResult.command.minArguments) {
+		if (parseResult.args.length < parseResult.command.minArguments) {
 			util.pm(player, `Too few arguments. Use .help ${parseResult.command.name}`, "error");
 			return;
+		}
+		const now = Date.now();
+		if (player.commandCooldowns.has(parseResult.command.name) && player.commandCooldowns.get(parseResult.command.name)! > now) {
+			util.pm(player, `.${parseResult.command.name}: command is on cooldown`, "error");
+			return;
+		}
+		if (!player.isSuperAdmin) {
+			player.commandCooldowns.set(parseResult.command.name, now + parseResult.command.cooldownSeconds * 1000);
 		}
 		const result = await this.executeCommand(parseResult);
 		//console.log("commandResult = " + util.variableToString(result));
@@ -449,7 +454,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "toggle_admin", category: "security", helpStrings: [".toggle_admin: toggles your admin visibility", ".toggle_admin [player]: toggles admin visibility of another player"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
+	name: "toggleadmin", category: "security", helpStrings: [".toggleadmin: toggles your admin visibility", ".toggleadmin [player]: toggles admin visibility of another player"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
 	execute: (player, args) => {
 		let targetPlayer = player;
 		if (args.length) {
@@ -693,6 +698,21 @@ commandManager.registerCommand({
 });
 commandManager.registerCommand({
 	name: "mix", category: "teams", helpStrings: [".mix: mixes the teams"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		playerManager.red.forEach(async (p) => {
+			await playerManager.movePlayerToTeam(p, 0);
+			p.spectatingSince = new Date(Math.floor(Math.random() * 1000));
+		});
+		playerManager.blue.forEach(async (p) => {
+			await playerManager.movePlayerToTeam(p, 0);
+			p.spectatingSince = new Date(Math.floor(Math.random() * 1000));
+		});
+		await balancing.balanceTeamsWithTimeout(1000);
+		return { ok: true, announce: `${player.name} mixed the teams` };
+	}
+});
+commandManager.registerCommand({
+	name: "remix", category: "teams", helpStrings: [".remix: mixes the teams and restarts the game"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		playerManager.red.forEach(async (p) => {
 			await playerManager.movePlayerToTeam(p, 0);
