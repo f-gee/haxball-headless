@@ -205,7 +205,7 @@ if (process.env.GEMINI_API_KEY) {
 			const MODEL = "gemini-2.5-flash";
 			const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 			const payload = {
-				systemInstruction: { parts: [{ text: "Limit your responses to a maximum of 3 sentences or 1000 characters." }] },
+				systemInstruction: { parts: [{ text: "Türkçe cevap ver, cevabını haxball text input'a sığacak kadar (100 karakter) civarı kısa tutmaya çalış. Halüsinasyon görüp komik şeyler yazabilirsin, eğlenceli cevaplar üret" }] },
 				contents: [{ parts: [{ text: q }] }],
 				//generationConfig: { maxOutputTokens: 1000 }
 			};
