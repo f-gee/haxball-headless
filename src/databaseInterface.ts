@@ -12,7 +12,7 @@ type BatchUpdatePlayersResult =
     | { ok: true; updatedCount: number; players: StoredPlayer[] }
     | { ok: false; error: string };
 
-type PlayerUpdate = Pick<StoredPlayer, 'auth' | 'elo' | 'totalGames' | 'totalWins' | 'lastActivity'>;
+type PlayerUpdate = Pick<StoredPlayer, 'name' | 'auth' | 'elo' | 'totalGames' | 'totalWins' | 'lastActivity'>;
 
 const queuedUpdates: Map<string, PlayerUpdate> = new Map();
 
@@ -92,6 +92,7 @@ export const dbInterface = {
 
     queueUpdate(player: StoredPlayer) {
         const update: PlayerUpdate = {
+            name: player.name,
             auth: player.auth,
             elo: player.elo,
             totalGames: player.totalGames,

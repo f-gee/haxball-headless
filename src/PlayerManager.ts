@@ -135,14 +135,14 @@ class PlayerManager {
         if (process.env.DB_API_URL) {
             dbInterface.getPlayer(player.auth).then(result => {
                 if (!result.ok) {
-                    console.warn(result.error);
+                    //console.warn(result.error);
                     return;
                 }
                 player.elo = result.player.elo;
                 player.totalGames = result.player.totalGames;
                 player.totalWins = result.player.totalWins;
 
-                room.sendAnnouncement(`Welcome back, ${player.name}! Elo: ${player.elo}, totalGames: ${player.totalGames}`);
+                util.pm(player, `Welcome back, ${player.name}! Elo: ${player.elo}`, "whisper");
             });
         }
     }
