@@ -1,0 +1,18 @@
+{
+    "HoiYGxX2xXyK41nth1evB-NSpoqw4LxGhvgnr5yFJ0g": {
+        "auth": "HoiYGxX2xXyK41nth1evB-NSpoqw4LxGhvgnr5yFJ0g",
+        "name": "player1",
+        "elo": 1234,
+        "totalGames": 10,
+        "totalWins": 5,
+        "lastActivity": "2026-07-28T14:32:00.000Z"
+    },
+    "auth2": {
+        "auth": "auth2",
+        "name": "player2",
+        "elo": 1345,
+        "totalGames": 9,
+        "totalWins": 6,
+        "lastActivity": "2026-07-28T14:32:00.000Z"
+    }
+}

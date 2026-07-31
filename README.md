@@ -22,11 +22,13 @@ npm install
 ### Using puppeteer or haxball.js:
   - Run the UI: `node ui/server.js` or `nohup node ui/server.js > out.log 2>&1 < /dev/null & disown`
   - visit `http://localhost:3001/`
-  - select host method and enter your token
+  - select platform and enter your token
 ### In your own browser:
   - Copy and paste `dist/bundle.browser.js` to your browser's console
   - If you use `dist/bundle.browser_dev.js`, it reads the token from .env file, if not, solve the captcha if prompted
 
+## Database environment:
+  - An example database backend is provided in `/db_api` folder. If you want an actual database, you need to implement it elsewhere and provide DB_API_URL in .env
 
 ## TODO
 - Write example JSON data files

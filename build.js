@@ -32,6 +32,23 @@ esbuild.build({
 
 esbuild.build({
     entryPoints: ["src/main.ts"],
+    outfile: "dist/bundle.browser_prod.js",
+    bundle: true,
+    minify: true,
+    format: "iife",
+    charset: 'utf8',
+    platform: "browser",
+    target: "es2020",
+    define: {
+        "process.env.NODE_ENV": '"production"',
+        ...envDefine,
+        "process.env.HAXBALL_PLATFORM": JSON.stringify('browser'),
+        "__BOT_VERSION__": JSON.stringify(pkg.version),
+    },
+}).catch(() => process.exit(1));
+
+esbuild.build({
+    entryPoints: ["src/main.ts"],
     outfile: "dist/bundle.puppeteer_dev.js",
     bundle: true,
     minify: true,
@@ -45,7 +62,7 @@ esbuild.build({
     target: "es2020",
     define: {
         "process.env.NODE_ENV": '"development"',
-        ...envDefine, // Spread all dynamically parsed .env variables
+        ...envDefine,
         "process.env.HAXBALL_PLATFORM": JSON.stringify('puppeteer'),
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
@@ -62,7 +79,7 @@ esbuild.build({
     target: "es2020",
     define: {
         "process.env.NODE_ENV": '"production"',
-        ...envDefine, // Spread all dynamically parsed .env variables
+        ...envDefine,
         "process.env.HAXBALL_PLATFORM": JSON.stringify('puppeteer'),
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
@@ -124,7 +141,7 @@ esbuild.build({
     target: "es2020",
     define: {
         "process.env.NODE_ENV": '"development"',
-        ...envDefine, // Spread all dynamically parsed .env variables
+        ...envDefine,
         "process.env.HAXBALL_PLATFORM": '"node"',
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },
@@ -146,7 +163,7 @@ esbuild.build({
     target: "es2020",
     define: {
         "process.env.NODE_ENV": '"production"',
-        ...envDefine, // Spread all dynamically parsed .env variables
+        ...envDefine,
         "process.env.HAXBALL_PLATFORM": '"node"',
         "__BOT_VERSION__": JSON.stringify(pkg.version),
     },

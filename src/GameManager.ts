@@ -1,5 +1,5 @@
 import { balancing } from "./balancing";
-import { playerManager, RecentPlayer } from "./PlayerManager";
+import { playerManager, StoredPlayer } from "./PlayerManager";
 import { util } from "./util";
 
 interface SavedAdminData {
@@ -47,7 +47,7 @@ export class GameManager {
     public lastTeamThatPicked: number = 2;
     public isCaptainPickingActive: boolean = false;
     public recentBans: { id: number, name: string, reason: string, by_name: string }[] = [];
-    public recentPlayers: RecentPlayer[] = [];
+    public recentPlayers: StoredPlayer[] = [];
 
     public timers: {
         afkTimer: ReturnType<typeof setTimeout> | null;

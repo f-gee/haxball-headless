@@ -1,5 +1,6 @@
 import { util } from "./util";
 import { gameManager, room } from "./GameManager";
+import { dbInterface } from "./databaseInterface";
 export interface Player {
     id: number;
     name: string;
@@ -25,10 +26,8 @@ export interface Player {
     totalWins: number;
 }
 
-export interface RecentPlayer {
-    id: number;
+export interface StoredPlayer {
     name: string;
-    conn: string;
     auth: string;
     elo: number;
     lastActivity: Date;
@@ -127,16 +126,32 @@ class PlayerManager {
     }
 
     public addPlayer(player: Player) {
+        player.lastActivity = new Date();
         this.all.set(player.id, player);
         this.addToTeamSet(player, player.team);
         // if (player.isAdmin) this.admins.add(player);
         // if (player.isSuperAdmin) this.superAdmins.add(player);
         // if (player.isDeveloper) this.developers.add(player);
+        if (process.env.DB_API_URL) {
+            dbInterface.getPlayer(player.auth).then(result => {
+                if (!result.ok) {
+                    console.warn(result.error);
+                    return;
+                }
+                player.elo = result.player.elo;
+                player.totalGames = result.player.totalGames;
+                player.totalWins = result.player.totalWins;
+
+                room.sendAnnouncement(`Welcome back, ${player.name}! Elo: ${player.elo}, totalGames: ${player.totalGames}`);
+            });
+        }
     }
 
     public removePlayer(playerId: number) {
         const player = this.all.get(playerId);
         if (!player) return;
+
+        player.lastActivity = new Date();
 
         if (gameManager.isGameRanked && gameManager.isGameGoingOn && player.team > 0) {
             player.elo -= 20;
@@ -150,6 +165,13 @@ class PlayerManager {
                 util.pm(_p, `${player.name} devam eden maçtan ayrıldığı için ${winnerGainElo} Elo puanı kazandınız. Yeni puanınız: ${_p.elo}`, "info");
                 //util.dbUtil.queuePlayerUpdate(_p);
             }
+        }
+
+        if (process.env.DB_API_URL) {
+            // dbInterface.updatePlayer(player.auth, { elo: player.elo }).catch(err => {
+            //     console.error('updatePlayer failed:', err);
+            // });
+            dbInterface.queueUpdate(player);
         }
 
         this.removeFromTeamSet(player, player.team);
@@ -174,6 +196,7 @@ class PlayerManager {
         await room.setPlayerTeam(player.id, newTeam);
     }
     public async setAfk(player: Player, isAfk: boolean) {
+        player.lastActivity = new Date();
         player.isAfk = isAfk;
         if (isAfk) {
             this.afks.add(player);
@@ -230,10 +253,8 @@ class PlayerManager {
             findRecentPlayer.totalGames = player.totalGames;
             findRecentPlayer.totalWins = player.totalWins;
         } else {
-            const recentPlayer: RecentPlayer = {
-                id: player.id,
+            const recentPlayer: StoredPlayer = {
                 name: player.name,
-                conn: player.conn,
                 auth: player.auth,
                 elo: player.elo,
                 lastActivity: player.lastActivity,
