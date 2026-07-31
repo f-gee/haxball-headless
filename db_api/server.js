@@ -57,30 +57,47 @@ function fromRow(row) {
     return row;
 }
 
+function log(action, message) {
+    console.log(`[DB] ${new Date().toISOString()} ${action} — ${message}`);
+}
+
 // --- routes ---
 
 // POST /getPlayer { auth }
 app.post('/getPlayer', (req, res) => {
     const { auth } = req.body;
-    if (!auth) return res.status(400).json({ error: 'auth is required' });
+    if (!auth) {
+        log('GET', 'rejected — auth is required');
+        return res.status(400).json({ error: 'auth is required' });
+    }
 
     const row = getPlayerStmt.get(auth);
-    if (!row) return res.status(404).json({ error: 'player not found' });
+    if (!row) {
+        log('GET', `not found — auth=${auth}`);
+        return res.status(404).json({ error: 'player not found' });
+    }
 
+    log('GET', `auth=${auth} name=${row.name}`);
     res.json(fromRow(row));
 });
 
 // POST /updatePlayer { auth, playerData }
 app.post('/updatePlayer', (req, res) => {
     const { auth, playerData } = req.body;
-    if (!auth) return res.status(400).json({ error: 'auth is required' });
+    if (!auth) {
+        log('UPDATE', 'rejected — auth is required');
+        return res.status(400).json({ error: 'auth is required' });
+    }
     if (!playerData || typeof playerData !== 'object') {
+        log('UPDATE', `rejected — playerData must be an object (auth=${auth})`);
         return res.status(400).json({ error: 'playerData must be an object' });
     }
 
+    const existed = !!getPlayerStmt.get(auth);
     upsertPlayerStmt.run(toRow(auth, playerData));
     const updated = getPlayerStmt.get(auth);
 
+    log('UPDATE', `${existed ? 'updated' : 'created'} auth=${auth} fields=${Object.keys(playerData).join(',')}`);
     res.json(fromRow(updated));
 });
 
@@ -88,16 +105,21 @@ app.post('/updatePlayer', (req, res) => {
 app.post('/batchUpdatePlayers', (req, res) => {
     const { playersDataArray } = req.body;
     if (!Array.isArray(playersDataArray)) {
+        log('BATCH', 'rejected — playersDataArray must be an array');
         return res.status(400).json({ error: 'playersDataArray must be an array' });
     }
 
     const updatedAuths = [];
+    const skipped = [];
 
     // wrap all upserts in a single transaction — either all succeed or none do,
     // and it's much faster than running each INSERT separately
     const runBatch = db.transaction((entries) => {
         for (const playerData of entries) {
-            if (!playerData || !playerData.auth) continue; // skip invalid entries
+            if (!playerData || !playerData.auth) {
+                skipped.push(playerData);
+                continue; // skip invalid entries
+            }
             upsertPlayerStmt.run(toRow(playerData.auth, playerData));
             updatedAuths.push(playerData.auth);
         }
@@ -107,6 +129,7 @@ app.post('/batchUpdatePlayers', (req, res) => {
 
     const players = updatedAuths.map(auth => fromRow(getPlayerStmt.get(auth)));
 
+    log('BATCH', `updated ${players.length} player(s)${skipped.length ? `, skipped ${skipped.length} invalid entr${skipped.length === 1 ? 'y' : 'ies'}` : ''} — auths=[${updatedAuths.join(', ')}]`);
     res.json({ updatedCount: players.length, players });
 });
 
