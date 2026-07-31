@@ -1,26 +1,60 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
+const Database = require('better-sqlite3');
 
 const app = express();
 app.use(express.json());
 
-const DB_PATH = path.join(__dirname, 'mock_database.json');
+const DB_PATH = path.join(__dirname, 'players.db');
+const db = new Database(DB_PATH);
 
-// --- simple JSON-file "database" ---
+// WAL mode = better concurrent read/write performance than default journal mode
+db.pragma('journal_mode = WAL');
 
-function loadDb() {
-    if (!fs.existsSync(DB_PATH)) return {};
-    try {
-        return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
-    } catch (err) {
-        console.error('Failed to parse players.json, starting fresh:', err);
-        return {};
-    }
+// --- schema ---
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS players (
+    auth TEXT PRIMARY KEY,
+    name TEXT,
+    elo INTEGER DEFAULT 1000,
+    totalGames INTEGER DEFAULT 0,
+    totalWins INTEGER DEFAULT 0,
+    lastActivity TEXT
+  )
+`);
+
+// --- prepared statements (compiled once, reused — fast) ---
+
+const getPlayerStmt = db.prepare('SELECT * FROM players WHERE auth = ?');
+
+const upsertPlayerStmt = db.prepare(`
+  INSERT INTO players (auth, name, elo, totalGames, totalWins, lastActivity)
+  VALUES (@auth, @name, @elo, @totalGames, @totalWins, @lastActivity)
+  ON CONFLICT(auth) DO UPDATE SET
+    name = COALESCE(excluded.name, players.name),
+    elo = COALESCE(excluded.elo, players.elo),
+    totalGames = COALESCE(excluded.totalGames, players.totalGames),
+    totalWins = COALESCE(excluded.totalWins, players.totalWins),
+    lastActivity = COALESCE(excluded.lastActivity, players.lastActivity)
+`);
+
+// --- helpers ---
+
+function toRow(auth, playerData) {
+    return {
+        auth,
+        name: playerData.name ?? null,
+        elo: playerData.elo ?? null,
+        totalGames: playerData.totalGames ?? null,
+        totalWins: playerData.totalWins ?? null,
+        lastActivity: playerData.lastActivity ?? null,
+    };
 }
 
-function saveDb(db) {
-    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+function fromRow(row) {
+    if (!row) return null;
+    return row;
 }
 
 // --- routes ---
@@ -30,11 +64,10 @@ app.post('/getPlayer', (req, res) => {
     const { auth } = req.body;
     if (!auth) return res.status(400).json({ error: 'auth is required' });
 
-    const db = loadDb();
-    const player = db[auth];
+    const row = getPlayerStmt.get(auth);
+    if (!row) return res.status(404).json({ error: 'player not found' });
 
-    if (!player) return res.status(404).json({ error: 'player not found' });
-    res.json(player);
+    res.json(fromRow(row));
 });
 
 // POST /updatePlayer { auth, playerData }
@@ -45,11 +78,10 @@ app.post('/updatePlayer', (req, res) => {
         return res.status(400).json({ error: 'playerData must be an object' });
     }
 
-    const db = loadDb();
-    db[auth] = { ...db[auth], ...playerData, auth };
-    saveDb(db);
+    upsertPlayerStmt.run(toRow(auth, playerData));
+    const updated = getPlayerStmt.get(auth);
 
-    res.json(db[auth]);
+    res.json(fromRow(updated));
 });
 
 // POST /batchUpdatePlayers { playersDataArray }
@@ -59,21 +91,26 @@ app.post('/batchUpdatePlayers', (req, res) => {
         return res.status(400).json({ error: 'playersDataArray must be an array' });
     }
 
-    const db = loadDb();
-    const updated = [];
+    const updatedAuths = [];
 
-    for (const playerData of playersDataArray) {
-        if (!playerData || !playerData.auth) continue; // skip invalid entries
-        const { auth } = playerData;
-        db[auth] = { ...db[auth], ...playerData, auth };
-        updated.push(db[auth]);
-    }
+    // wrap all upserts in a single transaction — either all succeed or none do,
+    // and it's much faster than running each INSERT separately
+    const runBatch = db.transaction((entries) => {
+        for (const playerData of entries) {
+            if (!playerData || !playerData.auth) continue; // skip invalid entries
+            upsertPlayerStmt.run(toRow(playerData.auth, playerData));
+            updatedAuths.push(playerData.auth);
+        }
+    });
 
-    saveDb(db);
-    res.json({ updatedCount: updated.length, players: updated });
+    runBatch(playersDataArray);
+
+    const players = updatedAuths.map(auth => fromRow(getPlayerStmt.get(auth)));
+
+    res.json({ updatedCount: players.length, players });
 });
 
 const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
-    console.log(`Players API listening on port ${PORT}`);
+    console.log(`Players API (SQLite) listening on port ${PORT}`);
 });
