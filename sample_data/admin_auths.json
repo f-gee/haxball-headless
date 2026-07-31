@@ -1,0 +1,12 @@
+[
+    {
+        "auth": "auth1",
+        "level": "superAdmin",
+        "description": "admin1_name"
+    },
+    {
+        "auth": "auth2",
+        "level": "admin",
+        "description": "admin2_name"
+    }
+]

@@ -31,7 +31,4 @@ npm install
   - An example database backend is provided in `/db_api` folder. If you want an actual database, you need to implement it elsewhere and provide DB_API_URL in .env
 
 ## TODO
-- Write example JSON data files
-- Check default admin passwords
 - Add option to host development builds
-- fix "game will resume" message on auto pause

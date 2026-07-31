@@ -20,9 +20,9 @@ interface Kits {
 
 export class GameManager {
     public roomParams: any;
-    public adminPasswords: string[] = ["addmin1", "addmin2"];
-    public superAdminPasswords: string[] = ["sa1", "sa2"];
-    public developerPasswords: string[] = ["dp1", "dp2"];
+    public adminPasswords: string[] = [];
+    public superAdminPasswords: string[] = [];
+    public developerPasswords: string[] = [];
     public savedAdminAuths: { data: SavedAdminData[], url: string } = { data: [], url: process.env.SAVED_ADMIN_AUTHS_URL };
     public blockNewTab: boolean = process.env.NODE_ENV === "development" ? false : true;
     public stadiums: { data: Stadium[], url: string, selectedStadiumName: string, currentStadiumMessage: string } = { data: [], url: process.env.STADIUMS_URL, selectedStadiumName: "default", currentStadiumMessage: "" };
@@ -66,7 +66,7 @@ export class GameManager {
 
     createRoom(extraParams: any = {}): any {
         Object.assign(this.roomParams, extraParams);
-        //const token = extraParams.token || null;
+        // token
         let token = null;
         if (process.env.HAXBALL_PLATFORM === "puppeteer") {
             token = (window as any).HB_TOKEN;
@@ -78,9 +78,17 @@ export class GameManager {
         if (token) {
             this.roomParams.token = token;
         }
+        // geo
         if (process.env.HB_ROOM_GEO) {
             this.roomParams.geo = JSON.parse(process.env.HB_ROOM_GEO);
         }
+        // passwords:
+        if (!process.env.PASSWORDS_ADMIN) {
+            console.log("You did not set admin passwords in .env file. You can only be promoted to admin if you use env.SAVED_ADMIN_AUTHS_URL");
+        }
+        this.adminPasswords = process.env.PASSWORDS_ADMIN ? process.env.PASSWORDS_ADMIN.split(",") : [];
+        this.superAdminPasswords = process.env.PASSWORDS_SUPERADMIN ? process.env.PASSWORDS_SUPERADMIN.split(",") : [];
+        this.developerPasswords = process.env.PASSWORDS_DEVELOPER ? process.env.PASSWORDS_DEVELOPER.split(",") : [];
         console.log(`calling HBInit with token: ${token} and geo: ${JSON.stringify(this.roomParams.geo)}`);
         const room = HBInit(this.roomParams);
         return room;
@@ -111,15 +119,9 @@ export class GameManager {
             if (this.timers.unpauseTimer) clearTimeout(this.timers.unpauseTimer);
             return
         }
+        // do not set unpauseTimer here, set only for manual pauses
         room.pauseGame(pauseState);
         this.isGamePaused = pauseState;
-        if (pauseState) {
-            const nSeconds = 30;
-            util.say(`Game will resume in ${nSeconds} seconds`);
-            this.timers.unpauseTimer = setTimeout(() => { this.pauseTheGame(false); }, nSeconds * 1000);
-        } else {
-            if (this.timers.unpauseTimer) clearTimeout(this.timers.unpauseTimer);
-        }
     }
 }
 // roomName: string = "Haxball Room", maxPlayers: number = 12, isPublic: boolean = false

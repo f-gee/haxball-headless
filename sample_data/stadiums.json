@@ -1,0 +1,31 @@
+[
+    {
+        "m": "stadium info message",
+        "t": [
+            4,
+            4
+        ],
+        "hbs": {
+            "name": "s",
+            "bg": {},
+            "width": 1,
+            "height": 2,
+            "vertexes": [],
+            "segments": [],
+            "discs": [],
+            "goals": [],
+            "planes": [],
+            "traits": {}
+        },
+        "name": "⚽ Futsal4v4"
+    },
+    {
+        "m": "",
+        "t": [
+            3,
+            3
+        ],
+        "hbs": {},
+        "name": "⚽ Futsal3v3"
+    }
+]

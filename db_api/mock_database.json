@@ -1,6 +1,6 @@
 {
-    "HoiYGxX2xXyK41nth1evB-NSpoqw4LxGhvgnr5yFJ0g": {
-        "auth": "HoiYGxX2xXyK41nth1evB-NSpoqw4LxGhvgnr5yFJ0g",
+    "auth1": {
+        "auth": "auth1",
         "name": "player1",
         "elo": 1234,
         "totalGames": 10,
