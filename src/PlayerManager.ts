@@ -163,15 +163,15 @@ class PlayerManager {
             for (const _p of playerManager[player.team === 1 ? "blue" : "red"]) {
                 _p.elo += winnerGainElo;
                 util.pm(_p, `${player.name} devam eden maçtan ayrıldığı için ${winnerGainElo} Elo puanı kazandınız. Yeni puanınız: ${_p.elo}`, "info");
-                //util.dbUtil.queuePlayerUpdate(_p);
             }
         }
 
         if (process.env.DB_API_URL) {
-            // dbInterface.updatePlayer(player.auth, { elo: player.elo }).catch(err => {
-            //     console.error('updatePlayer failed:', err);
-            // });
-            dbInterface.queueUpdate(player);
+            //dbInterface.queueUpdate(player);
+            // do not queue, update instantly
+            dbInterface.updatePlayer(player.auth, { elo: player.elo }).catch(err => {
+                console.error('updatePlayer failed:', err);
+            });
         }
 
         this.removeFromTeamSet(player, player.team);
@@ -217,7 +217,11 @@ class PlayerManager {
             for (const _p of playerManager[player.team === 1 ? "blue" : "red"]) {
                 _p.elo += winnerGainElo;
                 util.pm(_p, `${player.name} devam eden maçtan ayrıldığı için ${winnerGainElo} Elo puanı kazandınız. Yeni puanınız: ${_p.elo}`, "info");
-                //util.dbUtil.queuePlayerUpdate(_p);
+                if (process.env.DB_API_URL) {
+                    dbInterface.updatePlayer(player.auth, { elo: player.elo }).catch(err => {
+                        console.error('updatePlayer failed:', err);
+                    });
+                }
             }
         }
 

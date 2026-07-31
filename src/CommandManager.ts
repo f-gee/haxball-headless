@@ -303,8 +303,14 @@ commandManager.registerCommand({
 				await balancing.balanceTeamsWithTimeout(500);
 				break;
 			case "password":
-				const isPasswordOn = util.parseBoolean(newValue, false);
-				outputValue = isPasswordOn ? newValue : null;
+				// const isPasswordOn = util.parseBoolean(newValue, false);
+				// outputValue = isPasswordOn ? newValue : null;
+				// util.setRoomPassword(outputValue);
+				if (util.parseFalse(newValue)) {
+					outputValue = null;
+				} else {
+					outputValue = newValue
+				}
 				util.setRoomPassword(outputValue);
 				break;
 			case "captcha":
