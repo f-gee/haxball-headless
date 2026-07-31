@@ -191,7 +191,7 @@ if (process.env.DISCORD_INVITE_URL) {
 	commandManager.registerCommand({
 		name: "discord", category: "utility", helpStrings: ["shows discord invite link"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
 		execute: (player, args) => {
-			util.say(`Discord adresimiz: ${process.env.DISCORD_INVITE_URL}`);
+			util.say(`🎮 Discord adresimiz: ${process.env.DISCORD_INVITE_URL}`);
 			return { ok: true };
 		}
 	});
@@ -577,9 +577,13 @@ commandManager.registerCommand({
 		gameManager.isGamePaused = !gameManager.isGamePaused;
 		if (gameManager.isGamePaused) {
 			gameManager.pauseTheGame(true);
+			const nSeconds = 30;
+			util.say(`Game will resume in ${nSeconds} seconds`);
+			gameManager.timers.unpauseTimer = setTimeout(() => { gameManager.pauseTheGame(false); }, nSeconds * 1000);
 			return { ok: true, announce: `Game paused by ${player.name}` };
 		} else {
 			gameManager.pauseTheGame(false);
+			if (gameManager.timers.unpauseTimer) clearTimeout(gameManager.timers.unpauseTimer);
 			return { ok: true, announce: `Game resumed by ${player.name}` };
 		}
 	}
@@ -741,7 +745,7 @@ commandManager.registerCommand({
 		if (!targetPlayer) return { ok: false, error: "Player not found" };
 		await playerManager.movePlayerToTeam(targetPlayer, 1);
 		await balancing.balanceTeamsWithTimeout(500);
-		return { ok: true };
+		return { ok: true, announce: `${targetPlayer.name} moved to red team by ${player.name}` };
 	}
 });
 commandManager.registerCommand({
@@ -751,7 +755,7 @@ commandManager.registerCommand({
 		if (!targetPlayer) return { ok: false, error: "Player not found" };
 		await playerManager.movePlayerToTeam(targetPlayer, 2);
 		await balancing.balanceTeamsWithTimeout(500);
-		return { ok: true };
+		return { ok: true, announce: `${targetPlayer.name} moved to blue team by ${player.name}` };
 	}
 });
 commandManager.registerCommand({
@@ -762,7 +766,7 @@ commandManager.registerCommand({
 		await playerManager.movePlayerToTeam(targetPlayer, 0);
 		targetPlayer.spectatingSince = new Date();
 		await balancing.balanceTeamsWithTimeout(500);
-		return { ok: true };
+		return { ok: true, announce: `${targetPlayer.name} moved to spectators by ${player.name}` };
 	}
 });
 commandManager.registerCommand({

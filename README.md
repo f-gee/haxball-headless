@@ -33,3 +33,5 @@ npm install
 ## TODO
 - Write example JSON data files
 - Check default admin passwords
+- Add option to host development builds
+- fix "game will resume" message on auto pause

@@ -144,7 +144,7 @@ export const util = {
     checkSpam(player: Player, message: string) {
         if (player.isSuperAdmin) { return true }
         if (player.isAfk) {
-            util.pm(player, `⚠️ ${player.name}, AFK'siniz. Geri döndüyseniz lütfen .back komutunu kullanın`, "warning");
+            util.pm(player, `${player.name}, AFK'siniz. Geri döndüyseniz lütfen .back komutunu kullanın`, "warning");
         }
         const now = new Date();
         let dt;
