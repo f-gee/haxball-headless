@@ -223,5 +223,39 @@ export const util = {
             then(function (b) { return b.ok ? b.json() : Promise.reject({ status: b.status, statusText: b.statusText }) })
             .then(function (c) { targetObj.data = c; console.log(`${c.length}x ${keyQuery} downloaded`); })
             .catch((e) => { console.log(`error while fetching ${keyQuery}: ${e}`) });
+    },
+    async geminiAnalyzeChat(messages: string[]) {
+        if (!process.env.GEMINI_API_KEY) { return }
+        const API_KEY = process.env.GEMINI_API_KEY;
+        const MODEL = "gemini-2.5-flash";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+        const payload = {
+            systemInstruction: { parts: [{ text: "Analyze and commentate on this haxball chat. Summarize the situation from a third person perspective. Write your output in Turkish." }] },
+            contents: gameManager.chatCache.map(msg => ({
+                role: "user",
+                parts: [{ text: msg }]
+            }))
+        };
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                //util.pm(player, `HTTP error! Status: ${response.status}`);
+                util.messageDevelopers(`Gemini HTTP error! Status: ${response.status}`)
+                return { ok: false, error: `Gemini HTTP error! Status: ${response.status}` };
+            }
+            const data = await response.json();
+            const answer = data.candidates[0].content.parts[0].text;
+            util.say(`Gemini: ${answer}`);
+        } catch (e) {
+            util.messageDevelopers(`AI hatası: ${e}`);
+            return { ok: false, error: `AI hatası: ${e}` };
+        }
+
+
     }
 };

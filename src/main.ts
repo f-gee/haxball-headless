@@ -230,6 +230,14 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
         return false;
     }
 
+    if (gameManager.isCachingChat) {
+        gameManager.chatCache.push(`${player.name}: ${message}`);
+        if (gameManager.chatCache.length > gameManager.chatCacheLimit) {
+            util.geminiAnalyzeChat(gameManager.chatCache);
+            gameManager.chatCache = [];
+        }
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 

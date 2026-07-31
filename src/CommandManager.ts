@@ -196,6 +196,60 @@ if (process.env.DISCORD_INVITE_URL) {
 		}
 	});
 }
+if (process.env.GEMINI_API_KEY) {
+	commandManager.registerCommand({
+		name: "gemini", category: "chat", helpStrings: [".gemini [prompt]"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
+		execute: async (player, args) => {
+			let q = args.join(" ");
+			const API_KEY = process.env.GEMINI_API_KEY;
+			const MODEL = "gemini-2.5-flash";
+			const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+			const payload = {
+				systemInstruction: { parts: [{ text: "Limit your responses to a maximum of 3 sentences or 1000 characters." }] },
+				contents: [{ parts: [{ text: q }] }],
+				//generationConfig: { maxOutputTokens: 1000 }
+			};
+			try {
+				util.say(`${player.name} -> Gemini: ${q}`);
+				const response = await fetch(url, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(payload)
+				});
+
+				if (!response.ok) {
+					//util.pm(player, `HTTP error! Status: ${response.status}`);
+					util.messageDevelopers(`Gemini HTTP error! Status: ${response.status}`)
+					return { ok: false, error: `Gemini HTTP error! Status: ${response.status}` };
+				}
+				const data = await response.json();
+				const answer = data.candidates[0].content.parts[0].text;
+				//util.say(`Gemini -> ${player.name}: ${answer}`);
+				return { ok: true, announce: `Gemini -> ${player.name}: ${answer}` }
+			} catch (e) {
+				util.messageDevelopers(`AI hatası: ${e}`);
+				return { ok: false, error: `AI hatası: ${e}` };
+			}
+		}
+	});
+	commandManager.registerCommand({
+		name: "gemini_listen", category: "chat", helpStrings: [".gemini_listen [N]: replies to last N chat messages. N=0 to stop listening"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
+		execute: async (player, args) => {
+			const numMessages = parseInt(args[0]);
+			if (isNaN(numMessages) || numMessages < 0 || numMessages > 30) { return { ok: false, error: "Please provide a number between 0 and 30" } }
+			if (numMessages === 0) {
+				gameManager.isCachingChat = false;
+				return { ok: true, announce: `Gemini stopped listening to chat (${player.name})` };
+			}
+			else {
+				gameManager.isCachingChat = true;
+				gameManager.chatCache = [];
+				gameManager.chatCacheLimit = numMessages;
+				return { ok: true, announce: `Gemini will respond to every ${numMessages} messages (${player.name})` };
+			}
+		}
+	});
+}
 commandManager.registerCommand({
 	name: "pm", category: "chat", helpStrings: [".pm [player] [message]: sends a private message to the player"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
 	execute: async (player, args) => {

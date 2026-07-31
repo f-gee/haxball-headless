@@ -48,6 +48,9 @@ export class GameManager {
     public isCaptainPickingActive: boolean = false;
     public recentBans: { id: number, name: string, reason: string, by_name: string }[] = [];
     public recentPlayers: StoredPlayer[] = [];
+    public isCachingChat: boolean = false;
+    public chatCache: string[] = [];
+    public chatCacheLimit: number = 0;
 
     public timers: {
         afkTimer: ReturnType<typeof setTimeout> | null;

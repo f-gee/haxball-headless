@@ -32,6 +32,7 @@ declare const process: {
         HB_ROOM_NAME: string; // your room name 
         HB_ROOM_GEO?: string; // { "code": "TR", "lat": 12.34, "lon": 56.78 } (optional)
         DB_API_URL?: string; // http(s)://[ip] or http(s)://[domain]
+        GEMINI_API_KEY?: string;
     };
 };
 

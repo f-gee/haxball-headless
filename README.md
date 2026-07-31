@@ -32,3 +32,4 @@ npm install
 
 ## TODO
 - Add option to host development builds
+- TODO handle nonexistent env.GEMINI_API_KEY in browser build
