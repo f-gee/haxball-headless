@@ -7,6 +7,9 @@ export const Colors = {
     developer: 0xFF00FF,
     system: 0xAAAAAA,
     // color names
+    gray: 0xDDDDDD,
+    red: 0xE56E56,
+    blue: 0x5689E5,
     teal: 0x9ae5e5,
     pink: 0xfba9c4,
     gold: 0xffdf00,

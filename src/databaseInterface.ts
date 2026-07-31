@@ -1,4 +1,5 @@
 import { StoredPlayer } from "./PlayerManager";
+import { ENV } from "./env_handler";
 
 type GetPlayerResult =
     | { ok: true; player: StoredPlayer }
@@ -18,12 +19,12 @@ const queuedUpdates: Map<string, PlayerUpdate> = new Map();
 
 export const dbInterface = {
     async getPlayer(auth: string): Promise<GetPlayerResult> {
-        if (!process.env.DB_API_URL) {
+        if (!ENV.DB_API_URL) {
             return { ok: false, error: 'no DB API URL' };
         }
 
         try {
-            const res = await fetch(`${process.env.DB_API_URL}/getPlayer`, {
+            const res = await fetch(`${ENV.DB_API_URL}/getPlayer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ auth }),
@@ -45,12 +46,12 @@ export const dbInterface = {
     },
 
     async updatePlayer(auth: string, playerData: Partial<StoredPlayer>): Promise<UpdatePlayerResult> {
-        if (!process.env.DB_API_URL) {
+        if (!ENV.DB_API_URL) {
             return { ok: false, error: 'no DB API URL' };
         }
 
         try {
-            const res = await fetch(`${process.env.DB_API_URL}/updatePlayer`, {
+            const res = await fetch(`${ENV.DB_API_URL}/updatePlayer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ auth, playerData }),
@@ -68,12 +69,12 @@ export const dbInterface = {
     },
 
     async batchUpdatePlayers(playersDataArray: Partial<StoredPlayer>[]): Promise<BatchUpdatePlayersResult> {
-        if (!process.env.DB_API_URL) {
+        if (!ENV.DB_API_URL) {
             return { ok: false, error: 'no DB API URL' };
         }
 
         try {
-            const res = await fetch(`${process.env.DB_API_URL}/batchUpdatePlayers`, {
+            const res = await fetch(`${ENV.DB_API_URL}/batchUpdatePlayers`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ playersDataArray }),

@@ -3,6 +3,7 @@ import { commandManager } from './CommandManager';
 import { VanillaPlayer, Player, playerManager } from './PlayerManager';
 import { balancing } from "./balancing";
 import { util } from "./util";
+import { ENV } from "./env_handler";
 
 room.setDefaultStadium("Hockey");
 room.startGame();
@@ -232,7 +233,7 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
 
     if (gameManager.isCachingChat) {
         gameManager.chatCache.push(`${player.name}: ${message}`);
-        if (gameManager.chatCache.length > gameManager.chatCacheLimit) {
+        if (gameManager.chatCache.length >= gameManager.chatCacheLimit) {
             util.geminiAnalyzeChat(gameManager.chatCache);
             gameManager.chatCache = [];
         }
@@ -241,7 +242,7 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 
-    fetch(process.env.DISCORD_CHATLOGS_URL, {
+    fetch(ENV.DISCORD_CHATLOGS_URL, {
         method: "POST",
         signal: controller.signal,
         body: JSON.stringify({ "content": `**${player.name}:** ${message.replaceAll("@", "[@]")}` }),
@@ -263,7 +264,7 @@ room.onRoomLink = async (url: string) => {
         if (process.env.HAXBALL_PLATFORM === "node") {
             hjsCallback({ room, util, gameManager, playerManager, commandManager, url });
         }
-        await fetch(process.env.DISCORD_ROOMSTATUS_URL, {
+        await fetch(ENV.DISCORD_ROOMSTATUS_URL, {
             method: "PATCH",
             body: JSON.stringify({
                 "embeds": [
@@ -273,7 +274,7 @@ room.onRoomLink = async (url: string) => {
                         "color": 0x92FF0E,
                         "footer": {
                             "text": `bot v${__BOT_VERSION__} / ${gameManager.roomParams.public ? 'public' : 'private'} / ${gameManager.roomParams.maxPlayers}p`,
-                            "icon_url": process.env.DISCORD_ICON_URL,
+                            "icon_url": ENV.DISCORD_ICON_URL,
                         },
                         "url": url,
                         "timestamp": new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString().replace("Z", "+03:00")

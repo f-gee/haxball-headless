@@ -2,15 +2,22 @@ import { Player, VanillaPlayer, playerManager } from './PlayerManager';
 import { util } from './util';
 import { room, gameManager } from './GameManager';
 import { dbInterface } from './databaseInterface';
+import { Config } from './config';
 
 // exporting like this allows functions to be hot-plugged on the run
 export const balancing = {
     async reorderSpecs() {
-        const sortedSpecsArray = [...playerManager.spectators].sort(
-            (a, b) => a.spectatingSince.getTime() - b.spectatingSince.getTime()
-        );
+        const activeSpecs = [...playerManager.spectators]
+            .filter(p => !p.isAfk)
+            .sort((a, b) => a.spectatingSince.getTime() - b.spectatingSince.getTime());
+
+        const afkSpecs = [...playerManager.spectators].filter(p => p.isAfk);
+
+        const sortedSpecsArray = [...activeSpecs, ...afkSpecs];
+
         playerManager.spectators.clear();
         sortedSpecsArray.forEach(p => playerManager.spectators.add(p));
+
         await room.reorderPlayers(sortedSpecsArray.map(s => s.id), true);
     },
     async endGame(scores: { red: number, blue: number }) {
@@ -20,7 +27,7 @@ export const balancing = {
         const loserTeamName = loserTeamId === 1 ? "red" : "blue";
         const winnerTeam = winnerTeamId === 1 ? playerManager.red : playerManager.blue;
         const loserTeam = loserTeamId === 1 ? playerManager.red : playerManager.blue;
-        const msgColor = winnerTeamId === 1 ? 0xE56E56 : 0x5689E5;
+        const msgColor = winnerTeamId === 1 ? Config.colors.red : Config.colors.blue;
         let i, thisPlayer;
 
         gameManager.victoryStreak[loserTeamName] = 0;

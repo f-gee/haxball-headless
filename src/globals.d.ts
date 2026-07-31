@@ -10,7 +10,6 @@ declare function HBInit(config: {
 declare const hjsToken: string;
 declare const hjsCallback: function;
 
-// to check if (process.env.NODE_ENV !== "production")
 declare const process: {
     env: {
         NODE_ENV: string; // "production" | "development" (no need to write this in .env, it's set by build.js)

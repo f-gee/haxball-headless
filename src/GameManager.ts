@@ -1,6 +1,7 @@
 import { balancing } from "./balancing";
 import { playerManager, StoredPlayer } from "./PlayerManager";
 import { util } from "./util";
+import { ENV } from "./env_handler";
 
 interface SavedAdminData {
     level: string;
@@ -23,10 +24,10 @@ export class GameManager {
     public adminPasswords: string[] = [];
     public superAdminPasswords: string[] = [];
     public developerPasswords: string[] = [];
-    public savedAdminAuths: { data: SavedAdminData[], url: string } = { data: [], url: process.env.SAVED_ADMIN_AUTHS_URL };
+    public savedAdminAuths: { data: SavedAdminData[], url: string } = { data: [], url: ENV.SAVED_ADMIN_AUTHS_URL };
     public blockNewTab: boolean = process.env.NODE_ENV === "development" ? false : true;
-    public stadiums: { data: Stadium[], url: string, selectedStadiumName: string, currentStadiumMessage: string } = { data: [], url: process.env.STADIUMS_URL, selectedStadiumName: "default", currentStadiumMessage: "" };
-    public kits: { data: Kits[], url: string, selectedKitId: number } = { data: [], url: process.env.KITS_URL, selectedKitId: 0 };
+    public stadiums: { data: Stadium[], url: string, selectedStadiumName: string, currentStadiumMessage: string } = { data: [], url: ENV.STADIUMS_URL, selectedStadiumName: "default", currentStadiumMessage: "" };
+    public kits: { data: Kits[], url: string, selectedKitId: number } = { data: [], url: ENV.KITS_URL, selectedKitId: 0 };
     public welcomeMessage: string = "";
     public teamCaps: { red: number, blue: number, spec: number } = { red: 4, blue: 4, spec: 99 };
     public autoBalance: boolean = true;
@@ -74,7 +75,7 @@ export class GameManager {
         if (process.env.HAXBALL_PLATFORM === "puppeteer") {
             token = (window as any).HB_TOKEN;
         } else if (process.env.HAXBALL_PLATFORM === "browser") {
-            token = process.env.DEV_HB_TOKEN;
+            token = ENV.DEV_HB_TOKEN;
         } else if (process.env.HAXBALL_PLATFORM === "node") {
             token = hjsToken;
         }
@@ -82,16 +83,16 @@ export class GameManager {
             this.roomParams.token = token;
         }
         // geo
-        if (process.env.HB_ROOM_GEO) {
-            this.roomParams.geo = JSON.parse(process.env.HB_ROOM_GEO);
+        if (ENV.HB_ROOM_GEO) {
+            this.roomParams.geo = JSON.parse(ENV.HB_ROOM_GEO);
         }
         // passwords:
-        if (!process.env.PASSWORDS_ADMIN) {
+        if (!ENV.PASSWORDS_ADMIN) {
             console.log("You did not set admin passwords in .env file. You can only be promoted to admin if you use env.SAVED_ADMIN_AUTHS_URL");
         }
-        this.adminPasswords = process.env.PASSWORDS_ADMIN ? process.env.PASSWORDS_ADMIN.split(",") : [];
-        this.superAdminPasswords = process.env.PASSWORDS_SUPERADMIN ? process.env.PASSWORDS_SUPERADMIN.split(",") : [];
-        this.developerPasswords = process.env.PASSWORDS_DEVELOPER ? process.env.PASSWORDS_DEVELOPER.split(",") : [];
+        this.adminPasswords = ENV.PASSWORDS_ADMIN ? ENV.PASSWORDS_ADMIN.split(",") : [];
+        this.superAdminPasswords = ENV.PASSWORDS_SUPERADMIN ? ENV.PASSWORDS_SUPERADMIN.split(",") : [];
+        this.developerPasswords = ENV.PASSWORDS_DEVELOPER ? ENV.PASSWORDS_DEVELOPER.split(",") : [];
         console.log(`calling HBInit with token: ${token} and geo: ${JSON.stringify(this.roomParams.geo)}`);
         const room = HBInit(this.roomParams);
         return room;
@@ -128,11 +129,9 @@ export class GameManager {
     }
 }
 // roomName: string = "Haxball Room", maxPlayers: number = 12, isPublic: boolean = false
-export const gameManager = new GameManager({ roomName: process.env.HB_ROOM_NAME || "Haxball Room", maxPlayers: 14, public: process.env.NODE_ENV === "development" ? false : true, noPlayer: true });
+export const gameManager = new GameManager({ roomName: ENV.HB_ROOM_NAME || "Haxball Room", maxPlayers: 14, public: process.env.NODE_ENV === "development" ? false : true, noPlayer: true });
 util.fetchData(null, "admins");
 util.fetchData(null, "stadiums");
 util.fetchData(null, "kits");
-//export const room = gameManager.createRoom({ token: "thr1.AAAAAGplNWKzi8IBjALfQA.NF8XCsCSbvY" });
-//const room = gameManager.createRoom((process.env.HAXBALL_PLATFORM === "puppeteer" || process.env.HAXBALL_PLATFORM === "browser") ? { token: (window as any).HB_TOKEN } : process.env.HAXBALL_PLATFORM === "node" ? { token: process.env.DEV_HB_TOKEN } : {});
 const room = gameManager.createRoom();
 export { room };

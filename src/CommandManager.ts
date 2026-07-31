@@ -3,6 +3,8 @@ import { util } from "./util";
 import { playerManager, Player, VanillaPlayer } from "./PlayerManager";
 //import * as balancing from './balancing'
 import { balancing } from "./balancing";
+import { ENV } from "./env_handler";
+import { Config } from "./config";
 
 export interface Command {
 	name: string;
@@ -36,7 +38,9 @@ export class CommandManager {
 			"v": "version",
 			"h": "help",
 			"ta": "toggleadmin",
+			"t": "teamchat",
 			"p": "pause",
+			"res": "restart",
 			"r": "red",
 			"b": "blue",
 			"bal": "balance",
@@ -187,21 +191,21 @@ commandManager.registerCommand({
 		return { ok: true };
 	}
 });
-if (process.env.DISCORD_INVITE_URL) {
+if (ENV.DISCORD_INVITE_URL) {
 	commandManager.registerCommand({
 		name: "discord", category: "utility", helpStrings: ["shows discord invite link"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
 		execute: (player, args) => {
-			util.say(`🎮 Discord adresimiz: ${process.env.DISCORD_INVITE_URL}`);
+			util.say(`🎮 Discord adresimiz: ${ENV.DISCORD_INVITE_URL}`);
 			return { ok: true };
 		}
 	});
 }
-if (process.env.GEMINI_API_KEY) {
+if (ENV.GEMINI_API_KEY) {
 	commandManager.registerCommand({
 		name: "gemini", category: "chat", helpStrings: [".gemini [prompt]"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
 		execute: async (player, args) => {
 			let q = args.join(" ");
-			const API_KEY = process.env.GEMINI_API_KEY;
+			const API_KEY = ENV.GEMINI_API_KEY;
 			const MODEL = "gemini-2.5-flash";
 			const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 			const payload = {
@@ -733,7 +737,7 @@ commandManager.registerCommand({
 		} else {
 			await playerManager.setAfk(targetPlayer, true);
 			util.say(`${targetPlayer.name} is now AFK`);
-			//await balancing.reorderSpecs();
+			await balancing.reorderSpecs();
 			await balancing.balanceTeamsWithTimeout(500);
 			return { ok: true };
 		}
@@ -755,6 +759,7 @@ commandManager.registerCommand({
 			return { ok: true, warning: `${targetPlayer.name} is not AFK` };
 		} else {
 			await playerManager.setAfk(targetPlayer, false);
+			await balancing.reorderSpecs();
 			await balancing.balanceTeamsWithTimeout(500);
 			return { ok: true, announce: `${targetPlayer.name} is no longer AFK` };
 		}
@@ -862,6 +867,18 @@ commandManager.registerCommand({
 		const message = args.join(" ");
 		if (!message || !message.length) { return { ok: false, error: "Message cannot be empty" } }
 		return { ok: true, announce: `${message}` };
+	}
+});
+commandManager.registerCommand({
+	name: "teamchat", category: "chat", helpStrings: [".team [message]: sends a message to your team"], minArguments: 1, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
+	execute: (player, args) => {
+		const message = args.join(" ");
+		if (!message || !message.length) { return { ok: false, error: "Message cannot be empty" } }
+		//const team = player.team === 0 ? playerManager.spectators : player.team === 1 ? playerManager.red : playerManager.blue;
+		const teamName = player.team === 0 ? "spectators" : player.team === 1 ? "red" : "blue";
+		const team = playerManager[teamName];
+		team.forEach(p => { room.sendAnnouncement(`${player.name} -> ${teamName}: ${message}`, p.id, teamName === "red" ? Config.colors.red : teamName === "blue" ? Config.colors.blue : Config.colors.gray) });
+		return { ok: true };
 	}
 });
 commandManager.registerCommand({

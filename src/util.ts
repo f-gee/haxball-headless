@@ -1,6 +1,7 @@
 import { Config } from "./config";
 import { gameManager, room } from "./main";
 import { Player, playerManager, VanillaPlayer } from "./PlayerManager";
+import { ENV } from "./env_handler";
 export const util = {
     sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -174,10 +175,20 @@ export const util = {
         gameManager.roomPassword = password;
         room.setPassword(password);
         if (password) {
+            function formatIstanbulDate(date: Date = new Date()): string {
+                return date.toLocaleString("tr-TR", {
+                    timeZone: "Europe/Istanbul",
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                });
+            }
             util.messageAdmins(`ℹ️ New room password: ${password}`);
-            fetch(process.env.DISCORD_ROOMPASSWORD_URL, {
+            fetch(ENV.DISCORD_ROOMPASSWORD_URL, {
                 method: "PATCH",
-                body: JSON.stringify({ "content": `**Oda şifresi:** ${password}` }),
+                body: JSON.stringify({ "content": `**Oda şifresi:** ${password}\n*${formatIstanbulDate()}*` }),
                 headers: { "Content-Type": "application/json", },
             }).catch((err) => {
                 util.debugLog("Discord room password update failed: " + (err instanceof Error ? err.message : String(err)));
@@ -225,8 +236,8 @@ export const util = {
             .catch((e) => { console.log(`error while fetching ${keyQuery}: ${e}`) });
     },
     async geminiAnalyzeChat(messages: string[]) {
-        if (!process.env.GEMINI_API_KEY) { return }
-        const API_KEY = process.env.GEMINI_API_KEY;
+        if (!ENV.GEMINI_API_KEY) { return }
+        const API_KEY = ENV.GEMINI_API_KEY;
         const MODEL = "gemini-2.5-flash";
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
         const payload = {
