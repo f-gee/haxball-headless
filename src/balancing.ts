@@ -196,8 +196,8 @@ export const balancing = {
             const playerToMove = util.getRandomFromSet(fromTeam === 1 ? playerManager.red : playerManager.blue);
             //btLog(`big imbalance. randomly picked ${playerToMove.name} from team ${fromTeam} to team ${toTeam}`);
             await playerManager.movePlayerToTeam(playerToMove, toTeam);
-            util.debugLog(`${util.nameToMention(playerToMove.name)}, takımları dengelemek için ${toTeam === 1 ? "kırmızı" : "mavi"} takıma geçirildi`);
-            util.pm(playerToMove, `${util.nameToMention(playerToMove.name)}, takımları dengelemek için ${toTeam === 1 ? "kırmızı" : "mavi"} takıma geçirildiniz!`);
+            util.debugLog(`${playerToMove.name} takımları dengelemek için ${toTeam === 1 ? "kırmızı" : "mavi"} takıma geçirildi`);
+            util.pm(playerToMove, `${playerToMove.name}, takımları dengelemek için ${toTeam === 1 ? "kırmızı" : "mavi"} takıma geçirildiniz!`);
         }
         // final check for forceEqualTeams
         if (gameManager.forceEqualTeams && totalActivePlayers > 1 && playerManager.red.size !== playerManager.blue.size) {

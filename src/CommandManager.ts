@@ -83,7 +83,7 @@ export class CommandManager {
 		if (command.needsAdmin && !caller.isAdmin) {
 			return { ok: false, error: "This command requires admin" };
 		}
-		util.debugLog(`${caller.name}: .${command.name} ${args.join(" ")}`);
+		//util.debugLog(`${caller.name}: .${command.name} ${args.join(" ")}`);
 		try {
 			return await command.execute(caller, args);
 		} catch (commandException) {
@@ -93,7 +93,7 @@ export class CommandManager {
 		}
 	}
 	async parseAndExecuteCommand(player: Player, message: string): Promise<void> {
-		//util.debugLog(`${player.name}: ${message}`);
+		util.debugLog(`${player.name}: ${message}`);
 		//util.messageDevelopers(`${player.name}: ${message}`);
 		const parseResult = this.parseCommandInputs(player, message.substring(1));
 		if (!parseResult.command) {
@@ -792,6 +792,22 @@ commandManager.registerCommand({
 	execute: async (player, args) => {
 		await balancing.balanceTeamsWithTimeout(500);
 		return { ok: true, announce: `Teams balanced (by ${player.name})` };
+	}
+});
+commandManager.registerCommand({
+	name: "say", category: "chat", helpStrings: [".say [message]: Announce a message"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: false,
+	execute: (player, args) => {
+		const message = args.join(" ");
+		if (!message || !message.length) { return { ok: false, error: "Message cannot be empty" } }
+		return { ok: true, announce: `${player.name}: ${message}` };
+	}
+});
+commandManager.registerCommand({
+	name: "sayanon", category: "chat", helpStrings: [".sayanon [message]: Announce a message anonymously"], minArguments: 1, cooldownSeconds: 1, needsAdmin: true, needsSuperAdmin: true,
+	execute: (player, args) => {
+		const message = args.join(" ");
+		if (!message || !message.length) { return { ok: false, error: "Message cannot be empty" } }
+		return { ok: true, announce: `${message}` };
 	}
 });
 commandManager.registerCommand({

@@ -252,7 +252,7 @@ class PlayerManager {
         if (findRecentPlayer) {
             findRecentPlayer.name = player.name;
             findRecentPlayer.elo = player.elo;
-            findRecentPlayer.lastActivity = player.lastActivity;
+            findRecentPlayer.lastActivity = new Date();
             findRecentPlayer.chatMutedUntil = player.chatMutedUntil;
             findRecentPlayer.totalGames = player.totalGames;
             findRecentPlayer.totalWins = player.totalWins;

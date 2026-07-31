@@ -47,7 +47,7 @@ export const util = {
             text = String(message);
         }
 
-        const outputMsg = "[DBG] " + text;
+        const outputMsg = "📔 " + text;
         console.log(outputMsg);
         playerManager.developers.forEach(p => room.sendAnnouncement(outputMsg, p.id, Config.colors.gold));
     },
