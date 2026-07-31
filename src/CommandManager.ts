@@ -714,6 +714,7 @@ commandManager.registerCommand({
 commandManager.registerCommand({
 	name: "remix", category: "teams", helpStrings: [".remix: mixes the teams and restarts the game"], minArguments: 0, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
+		room.stopGame();
 		playerManager.red.forEach(async (p) => {
 			await playerManager.movePlayerToTeam(p, 0);
 			p.spectatingSince = new Date(Math.floor(Math.random() * 1000));
@@ -723,6 +724,7 @@ commandManager.registerCommand({
 			p.spectatingSince = new Date(Math.floor(Math.random() * 1000));
 		});
 		await balancing.balanceTeamsWithTimeout(1000);
+		room.startGame();
 		return { ok: true, announce: `${player.name} mixed the teams` };
 	}
 });
@@ -829,5 +831,18 @@ commandManager.registerCommand({
 		});
 		util.say(`✔️ Everyone is unmuted by ${player.name}`);
 		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "elo", category: "chat", helpStrings: [".elo: shows your Elo", ".elo [player]: shows another player's Elo"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
+	execute: (player, args) => {
+		let targetPlayer;
+		if (args.length) {
+			targetPlayer = playerManager.getByQuery(args[0]);
+			if (!targetPlayer) return { ok: false, error: "Player not found" };
+		} else {
+			targetPlayer = player;
+		}
+		return { ok: true, info: `${targetPlayer.name}'s Elo is ${targetPlayer.elo}` };
 	}
 });

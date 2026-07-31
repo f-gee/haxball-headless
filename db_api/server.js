@@ -17,7 +17,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS players (
     auth TEXT PRIMARY KEY,
     name TEXT,
-    elo INTEGER DEFAULT 1000,
+    elo INTEGER DEFAULT 1600,
     totalGames INTEGER DEFAULT 0,
     totalWins INTEGER DEFAULT 0,
     lastActivity TEXT
@@ -77,7 +77,8 @@ app.post('/getPlayer', (req, res) => {
         return res.status(404).json({ error: 'player not found' });
     }
 
-    log('GET', `auth=${auth} name=${row.name}`);
+    //log('GET', `auth=${auth} name=${row.name}`);
+    log('GET', `auth=${auth} name=${JSON.stringify(row)}`);
     res.json(fromRow(row));
 });
 
@@ -120,6 +121,7 @@ app.post('/batchUpdatePlayers', (req, res) => {
                 skipped.push(playerData);
                 continue; // skip invalid entries
             }
+            console.log(`update: ${JSON.stringify(playerData)}`);
             upsertPlayerStmt.run(toRow(playerData.auth, playerData));
             updatedAuths.push(playerData.auth);
         }
