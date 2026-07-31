@@ -3,6 +3,7 @@ import { commandManager } from './CommandManager';
 import { VanillaPlayer, Player, playerManager } from './PlayerManager';
 import { balancing } from "./balancing";
 import { util } from "./util";
+import { dbInterface } from "./databaseInterface";
 
 room.setDefaultStadium("Hockey");
 room.startGame();
@@ -135,6 +136,7 @@ room.onTeamVictory = async (_scores: { red: number, blue: number }) => {
     // 	clearInterval(gameManager.timers.AfkTrackingInterval);
     // }
     await balancing.endGame(_scores);
+    dbInterface.flushQueue();
     if (!gameManager.captainMode) {
         const nSeconds = (gameManager.mixMode === "None") ? 60 : 5;
         //util.say(`Yeni oyun ${nSeconds} saniye sonra başlayacak`);

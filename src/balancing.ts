@@ -1,6 +1,7 @@
 import { Player, VanillaPlayer, playerManager } from './PlayerManager';
 import { util } from './util';
 import { room, gameManager } from './GameManager';
+import { dbInterface } from './databaseInterface';
 
 // exporting like this allows functions to be hot-plugged on the run
 export const balancing = {
@@ -48,11 +49,13 @@ export const balancing = {
                 p.totalWins++;
                 p.elo += eloChange;
                 util.pm(p, `You gained ${eloChange} Elo, your new score: ${p.elo}`);
+                dbInterface.queueUpdate(p);
             });
             loserTeam.forEach(p => {
                 p.totalGames++;
                 p.elo -= eloChange;
                 util.pm(p, `You lost ${eloChange} Elo, your new score: ${p.elo}`);
+                dbInterface.queueUpdate(p);
             });
 
         }

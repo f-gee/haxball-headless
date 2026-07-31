@@ -108,8 +108,8 @@ export const dbInterface = {
         } else {
             queuedUpdates.set(player.auth, update);
         }
-        console.log(`[DB] Queued update for player: ${player.name}, ${player.auth}`);
-        console.log(JSON.stringify([...queuedUpdates]));
+        // console.log(`[DB] Queued update for player: ${player.name}, ${player.auth}`);
+        // console.log(JSON.stringify([...queuedUpdates]));
     },
 
     flushQueue() {
