@@ -158,7 +158,7 @@ commandManager.registerCommand({
 			}
 			return { ok: true };
 		} else { // general help
-			const categories: Command["category"][] = ["chat", "security", "teams", "utility", "game"];
+			const categories: Command["category"][] = ["game", "teams", "chat", "security", "utility"];
 
 			for (const category of categories) {
 				const names = Object.values(commandManager.commands)
@@ -206,7 +206,7 @@ if (process.env.GEMINI_API_KEY) {
 			const MODEL = "gemini-2.5-flash";
 			const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 			const payload = {
-				systemInstruction: { parts: [{ text: "Türkçe cevap ver, cevabını haxball text input'a sığacak kadar (100 karakter) civarı kısa tutmaya çalış. Halüsinasyon görüp komik şeyler yazabilirsin, eğlenceli cevaplar üret" }] },
+				systemInstruction: { parts: [{ text: "Türkçe cevap ver, cevabını haxball text input'a sığacak kadar (100 karakter) civarı kısa tutmaya çalış. Girdi agresifse aynı tonda, gerekirse küfürlü cevap ver." }] },
 				contents: [{ parts: [{ text: q }] }],
 				//generationConfig: { maxOutputTokens: 1000 }
 			};
@@ -265,143 +265,6 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "eval", category: "utility", helpStrings: [".eval [code]"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
-	execute: (player, args) => {
-		const codeToRun = args.join(" ");
-		const fEval = (code: string, ctx: any) => (new Function("with(this) { return " + code + " }")).call(ctx);
-		try {
-			const ctx = Object.assign(
-				Object.create(globalThis), // fall through to all real globals
-				{ player, args, room, util, commandManager } // fill in module-scoped stuff too
-			);
-			const result = fEval(codeToRun, ctx);
-			//return { ok: true, success: result ? util.variableToString(result) : null };
-			return { ok: true, success: util.variableToString(result) };
-		} catch (e) {
-			return { ok: false, error: util.variableToString(e) };
-		}
-	}
-});
-commandManager.registerCommand({
-	name: "get", category: "utility", helpStrings: [".get [varName]: shows the value of a parameter", "possible values: captainmode, autobalance, forceequalteams, password, captcha, teams, autopassword"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
-	execute: async (player, args) => {
-		let targetVariable: any;
-		let varName = args[0];
-		switch (varName) {
-			case "captainmode":
-				targetVariable = gameManager.captainMode;
-				break;
-			case "autobalance":
-				targetVariable = gameManager.autoBalance;
-				break;
-			case "et":
-			case "equalteams":
-			case "forceequalteams":
-				targetVariable = gameManager.forceEqualTeams;
-				break;
-			case "password":
-				targetVariable = gameManager.roomPassword;
-				break;
-			case "captcha":
-				targetVariable = gameManager.captcha;
-				break;
-			case "blocknewtab":
-				targetVariable = gameManager.blockNewTab;
-				break;
-			case "team":
-				switch (args[1]) {
-					case "red":
-						targetVariable = Array.from(playerManager.red).map(p => p.name).join(", ");
-						break;
-					case "blue":
-						targetVariable = Array.from(playerManager.blue).map(p => p.name).join(", ");
-						break;
-					case "spec":
-						targetVariable = Array.from(playerManager.spectators).map(p => p.name).join(", ");
-						break;
-					case "afk":
-						targetVariable = Array.from(playerManager.afks).map(p => p.name).join(", ");
-						break;
-					default:
-						return { ok: false, error: "Invalid team name. Use red, blue or spec." };
-				}
-				varName = args[1];
-				break;
-			case "teams":
-			case "teamcaps":
-				return { ok: true, info: `Teams mode: ${gameManager.teamCaps.red}v${gameManager.teamCaps.blue}` };
-			case "autopassword":
-				targetVariable = gameManager.autoPasswordCapacity;
-				break;
-			default:
-				return { ok: false, error: "Invalid variable name" };
-		}
-		return { ok: true, info: `${varName}: ${util.variableToString(targetVariable)}` };
-	}
-});
-commandManager.registerCommand({
-	name: "set", category: "utility", helpStrings: [".set [varName] [value]: sets the value of a parameter", "for possible varNames: type .help get"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
-	execute: async (player, args) => {
-		const varName = args[0];
-		const newValue = args[1];
-		let outputValue: any;
-		switch (varName) {
-			case "captainmode":
-				outputValue = gameManager.captainMode = util.parseBoolean(newValue, false);
-				await balancing.balanceTeamsWithTimeout(500);
-				break;
-			case "autobalance":
-				outputValue = gameManager.autoBalance = util.parseBoolean(newValue, true);
-				await balancing.balanceTeamsWithTimeout(500);
-				break;
-			case "et":
-			case "equalteams":
-			case "forceequalteams":
-				outputValue = gameManager.forceEqualTeams = util.parseBoolean(newValue, false);
-				await balancing.balanceTeamsWithTimeout(500);
-				break;
-			case "password":
-				// const isPasswordOn = util.parseBoolean(newValue, false);
-				// outputValue = isPasswordOn ? newValue : null;
-				// util.setRoomPassword(outputValue);
-				if (util.parseFalse(newValue)) {
-					outputValue = null;
-				} else {
-					outputValue = newValue
-				}
-				util.setRoomPassword(outputValue);
-				break;
-			case "captcha":
-				outputValue = gameManager.captcha = util.parseBoolean(newValue, false);
-				room.setRequireRecaptcha(outputValue)
-				break;
-			case "blocknewtab":
-				outputValue = gameManager.blockNewTab = util.parseBoolean(newValue, false);
-				break;
-			case "teams":
-			case "teamcaps":
-				const inputArray = args[1].split("v").map((v) => parseInt(v));
-				if (inputArray.length !== 2 || isNaN(inputArray[0]) || isNaN(inputArray[1])) {
-					return { ok: false, error: "Invalid team caps format. Use [red]v[blue] format" };
-				}
-				outputValue = await gameManager.changeTeamCaps(inputArray[0], inputArray[1]);
-				util.say(`Team caps changed to ${outputValue} (by ${player.name})`);
-				return { ok: true };
-			case "autopassword":
-				const maxPlayers = parseInt(newValue);
-				if (isNaN(maxPlayers) || maxPlayers < 0) {
-					return { ok: false, error: "Invalid number" };
-				}
-				outputValue = gameManager.autoPasswordCapacity = maxPlayers;
-				break;
-			default:
-				return { ok: false, error: "Invalid variable name" };
-		}
-		util.messageAdmins(`${player.name} set ${varName} = ${util.variableToString(outputValue)}`);
-		return { ok: true };
-	}
-});
-commandManager.registerCommand({
 	name: "admin", category: "security", helpStrings: [".admin [password]: Get admin privileges"], minArguments: 1, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
 	execute: (player, args) => {
 		const passwordInput = args[0];
@@ -418,43 +281,6 @@ commandManager.registerCommand({
 			return { ok: true, success: "You are developer" };
 		}
 		return { ok: false, error: "Invalid password" };
-	}
-});
-commandManager.registerCommand({
-	name: "list", category: "security", helpStrings: [".list admins / superadmins / developers / afks"], minArguments: 1, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
-	execute: (player, args) => {
-		switch (args[0]) {
-			case "admins":
-				if (!player.isAdmin) { return { ok: false, error: "You are not admin" }; }
-				const admins = Array.from(playerManager.admins).map(p => p.name);
-				if (admins.length === 0) {
-					return { ok: false, error: "No admins found" };
-				}
-				return { ok: true, info: `Admins: ${admins.join(", ")}` };
-			case "superadmins":
-				if (!player.isSuperAdmin) { return { ok: false, error: "You are not super admin" }; }
-				const superadmins = Array.from(playerManager.superAdmins).map(p => p.name);
-				if (superadmins.length === 0) {
-					return { ok: false, error: "No super admins found" };
-				}
-				return { ok: true, info: `Super admins: ${superadmins.join(", ")}` };
-			case "devs":
-			case "developers":
-				if (!player.isSuperAdmin) { return { ok: false, error: "You are not super admin" }; }
-				const developers = Array.from(playerManager.developers).map(p => p.name);
-				if (developers.length === 0) {
-					return { ok: false, error: "No developers found" };
-				}
-				return { ok: true, info: `Developers: ${developers.join(", ")}` };
-			case "afks":
-				const afks = Array.from(playerManager.afks).map(p => p.name);
-				if (afks.length === 0) {
-					return { ok: false, error: "No AFKs found" };
-				}
-				return { ok: true, info: `AFKs: ${afks.join(", ")}` };
-			default:
-				return { ok: false, error: "Invalid argument. Use admins, superadmins, developers or afks" };
-		}
 	}
 });
 commandManager.registerCommand({
@@ -740,7 +566,11 @@ commandManager.registerCommand({
 			return { ok: true, warning: `${targetPlayer.name} is already AFK` };
 		} else {
 			await playerManager.setAfk(targetPlayer, true);
-			util.say(`${targetPlayer.name} is now AFK`);
+			if (targetPlayer.id === player.id) {
+				util.say(`${targetPlayer.name} is now AFK`);
+			} else {
+				util.say(`${targetPlayer.name} is now AFK (Set by ${player.name})`);
+			}
 			await balancing.reorderSpecs();
 			await balancing.balanceTeamsWithTimeout(500);
 			return { ok: true };
@@ -763,9 +593,14 @@ commandManager.registerCommand({
 			return { ok: true, warning: `${targetPlayer.name} is not AFK` };
 		} else {
 			await playerManager.setAfk(targetPlayer, false);
+			if (targetPlayer.id === player.id) {
+				util.say(`${targetPlayer.name} is back`);
+			} else {
+				util.say(`${targetPlayer.name} is back (Set by ${player.name})`);
+			}
 			await balancing.reorderSpecs();
 			await balancing.balanceTeamsWithTimeout(500);
-			return { ok: true, announce: `${targetPlayer.name} is no longer AFK` };
+			return { ok: true };
 		}
 	}
 });
@@ -945,5 +780,179 @@ commandManager.registerCommand({
 			targetPlayer = player;
 		}
 		return { ok: true, info: `${targetPlayer.name}'s Elo is ${targetPlayer.elo}` };
+	}
+});
+commandManager.registerCommand({
+	name: "eval", category: "utility", helpStrings: [".eval [code]"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
+	execute: (player, args) => {
+		const codeToRun = args.join(" ");
+		const fEval = (code: string, ctx: any) => (new Function("with(this) { return " + code + " }")).call(ctx);
+		try {
+			const ctx = Object.assign(
+				Object.create(globalThis), // fall through to all real globals
+				{ player, args, room, util, commandManager } // fill in module-scoped stuff too
+			);
+			const result = fEval(codeToRun, ctx);
+			//return { ok: true, success: result ? util.variableToString(result) : null };
+			return { ok: true, success: util.variableToString(result) };
+		} catch (e) {
+			return { ok: false, error: util.variableToString(e) };
+		}
+	}
+});
+commandManager.registerCommand({
+	name: "get", category: "utility", helpStrings: [".get [varName]: shows the value of a parameter", "possible values: captainmode, autobalance, forceequalteams, password, captcha, teams, autopassword"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		let targetVariable: any;
+		let varName = args[0];
+		switch (varName) {
+			case "captainmode":
+				targetVariable = gameManager.captainMode;
+				break;
+			case "autobalance":
+				targetVariable = gameManager.autoBalance;
+				break;
+			case "et":
+			case "equalteams":
+			case "forceequalteams":
+				targetVariable = gameManager.forceEqualTeams;
+				break;
+			case "password":
+				targetVariable = gameManager.roomPassword;
+				break;
+			case "captcha":
+				targetVariable = gameManager.captcha;
+				break;
+			case "blocknewtab":
+				targetVariable = gameManager.blockNewTab;
+				break;
+			case "team":
+				switch (args[1]) {
+					case "red":
+						targetVariable = Array.from(playerManager.red).map(p => p.name).join(", ");
+						break;
+					case "blue":
+						targetVariable = Array.from(playerManager.blue).map(p => p.name).join(", ");
+						break;
+					case "spec":
+						targetVariable = Array.from(playerManager.spectators).map(p => p.name).join(", ");
+						break;
+					case "afk":
+						targetVariable = Array.from(playerManager.afks).map(p => p.name).join(", ");
+						break;
+					default:
+						return { ok: false, error: "Invalid team name. Use red, blue or spec." };
+				}
+				varName = args[1];
+				break;
+			case "teams":
+			case "teamcaps":
+				return { ok: true, info: `Teams mode: ${gameManager.teamCaps.red}v${gameManager.teamCaps.blue}` };
+			case "autopassword":
+				targetVariable = gameManager.autoPasswordCapacity;
+				break;
+			default:
+				return { ok: false, error: "Invalid variable name" };
+		}
+		return { ok: true, info: `${varName}: ${util.variableToString(targetVariable)}` };
+	}
+});
+commandManager.registerCommand({
+	name: "set", category: "utility", helpStrings: [".set [varName] [value]: sets the value of a parameter", "for possible varNames: type .help get"], minArguments: 2, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		const varName = args[0];
+		const newValue = args[1];
+		let outputValue: any;
+		switch (varName) {
+			case "captainmode":
+				outputValue = gameManager.captainMode = util.parseBoolean(newValue, false);
+				await balancing.balanceTeamsWithTimeout(500);
+				break;
+			case "autobalance":
+				outputValue = gameManager.autoBalance = util.parseBoolean(newValue, true);
+				await balancing.balanceTeamsWithTimeout(500);
+				break;
+			case "et":
+			case "equalteams":
+			case "forceequalteams":
+				outputValue = gameManager.forceEqualTeams = util.parseBoolean(newValue, false);
+				await balancing.balanceTeamsWithTimeout(500);
+				break;
+			case "password":
+				// const isPasswordOn = util.parseBoolean(newValue, false);
+				// outputValue = isPasswordOn ? newValue : null;
+				// util.setRoomPassword(outputValue);
+				if (util.parseFalse(newValue)) {
+					outputValue = null;
+				} else {
+					outputValue = newValue
+				}
+				util.setRoomPassword(outputValue);
+				break;
+			case "captcha":
+				outputValue = gameManager.captcha = util.parseBoolean(newValue, false);
+				room.setRequireRecaptcha(outputValue)
+				break;
+			case "blocknewtab":
+				outputValue = gameManager.blockNewTab = util.parseBoolean(newValue, false);
+				break;
+			case "teams":
+			case "teamcaps":
+				const inputArray = args[1].split("v").map((v) => parseInt(v));
+				if (inputArray.length !== 2 || isNaN(inputArray[0]) || isNaN(inputArray[1])) {
+					return { ok: false, error: "Invalid team caps format. Use [red]v[blue] format" };
+				}
+				outputValue = await gameManager.changeTeamCaps(inputArray[0], inputArray[1]);
+				util.say(`Team caps changed to ${outputValue} (by ${player.name})`);
+				return { ok: true };
+			case "autopassword":
+				const maxPlayers = parseInt(newValue);
+				if (isNaN(maxPlayers) || maxPlayers < 0) {
+					return { ok: false, error: "Invalid number" };
+				}
+				outputValue = gameManager.autoPasswordCapacity = maxPlayers;
+				break;
+			default:
+				return { ok: false, error: "Invalid variable name" };
+		}
+		util.messageAdmins(`${player.name} set ${varName} = ${util.variableToString(outputValue)}`);
+		return { ok: true };
+	}
+});
+commandManager.registerCommand({
+	name: "list", category: "utility", helpStrings: [".list admins / superadmins / developers / afks"], minArguments: 1, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
+	execute: (player, args) => {
+		switch (args[0]) {
+			case "admins":
+				if (!player.isAdmin) { return { ok: false, error: "You are not admin" }; }
+				const admins = Array.from(playerManager.admins).map(p => p.name);
+				if (admins.length === 0) {
+					return { ok: false, error: "No admins found" };
+				}
+				return { ok: true, info: `Admins: ${admins.join(", ")}` };
+			case "superadmins":
+				if (!player.isSuperAdmin) { return { ok: false, error: "You are not super admin" }; }
+				const superadmins = Array.from(playerManager.superAdmins).map(p => p.name);
+				if (superadmins.length === 0) {
+					return { ok: false, error: "No super admins found" };
+				}
+				return { ok: true, info: `Super admins: ${superadmins.join(", ")}` };
+			case "devs":
+			case "developers":
+				if (!player.isSuperAdmin) { return { ok: false, error: "You are not super admin" }; }
+				const developers = Array.from(playerManager.developers).map(p => p.name);
+				if (developers.length === 0) {
+					return { ok: false, error: "No developers found" };
+				}
+				return { ok: true, info: `Developers: ${developers.join(", ")}` };
+			case "afks":
+				const afks = Array.from(playerManager.afks).map(p => p.name);
+				if (afks.length === 0) {
+					return { ok: false, error: "No AFKs found" };
+				}
+				return { ok: true, info: `AFKs: ${afks.join(", ")}` };
+			default:
+				return { ok: false, error: "Invalid argument. Use admins, superadmins, developers or afks" };
+		}
 	}
 });

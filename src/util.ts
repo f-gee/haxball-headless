@@ -242,7 +242,7 @@ export const util = {
         const MODEL = "gemini-2.5-flash";
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
         const payload = {
-            systemInstruction: { parts: [{ text: "Analyze and commentate on this haxball chat. Summarize the situation from a third person perspective. Write your output in Turkish." }] },
+            systemInstruction: { parts: [{ text: "Write your output in Turkish. Analyze and commentate on this haxball chat. Summarize the situation from a third person perspective, in very little words. If you notice a dispute, indicate whose side you picked and why." }] },
             contents: gameManager.chatCache.map(msg => ({
                 role: "user",
                 parts: [{ text: msg }]
