@@ -1,5 +1,5 @@
 import { balancing } from "./balancing";
-import { playerManager, StoredPlayer } from "./PlayerManager";
+import { VanillaPlayer, playerManager, StoredPlayer } from "./PlayerManager";
 import { util } from "./util";
 
 interface SavedAdminData {
@@ -51,16 +51,17 @@ export class GameManager {
     public isCachingChat: boolean = false;
     public chatCache: string[] = [];
     public chatCacheLimit: number = 0;
+    public isTrackingAfks: boolean = true;
 
     public timers: {
-        afkTimer: ReturnType<typeof setTimeout> | null;
+        afkCheckInterval: ReturnType<typeof setInterval> | null;
         balanceTimer: ReturnType<typeof setTimeout> | null;
         startTimer: ReturnType<typeof setTimeout> | null;
         unpauseTimer: ReturnType<typeof setTimeout> | null;
         captainPickInterval: ReturnType<typeof setInterval> | null;
         pendingPromise: Promise<void> | null;
         resolvePending: (() => void) | null;
-    } = { afkTimer: null, balanceTimer: null, captainPickInterval: null, startTimer: null, unpauseTimer: null, pendingPromise: null, resolvePending: null }
+    } = { afkCheckInterval: null, balanceTimer: null, captainPickInterval: null, startTimer: null, unpauseTimer: null, pendingPromise: null, resolvePending: null }
 
     constructor(roomParams: any) {
         console.log(`room is ${roomParams.public ? "public" : "private"}`);
@@ -125,6 +126,57 @@ export class GameManager {
         // do not set unpauseTimer here, set only for manual pauses
         room.pauseGame(pauseState);
         this.isGamePaused = pauseState;
+    }
+    checkAfks() {
+        const _now = new Date();
+        playerManager.all.forEach(async p => {
+            if (p.team === 0) { return; }
+            const deltaTime = _now.getTime() - p.lastActivity.getTime();
+            if (deltaTime > 20000) {
+                if (p.isSuperAdmin) { // if admin, spec
+                    util.messageAdmins(`${p.name} assigned to spectate due to AFK`);
+                    p.spectatingSince = _now;
+                    p.afkGamesCount = 0;
+                    //await playerManager.movePlayerToTeam(p, 3);
+                    await playerManager.setAfk(p, true);
+                    await balancing.reorderSpecs();
+                    await balancing.balanceTeamsWithTimeout(500);
+                } else {// if not admin, kick
+                    room.kickPlayer(p.id, "AFK", false);
+                }
+            } else if (deltaTime > 10000) {
+                util.pm(p, `${p.name}, ${Math.ceil((20000 - deltaTime) / 1000)} saniye içinde geri dönmezseniz atılacaksınız!`, "warning");
+            }
+        });
+    }
+    resetAfkChecks() {
+        //for (const player of playerManager.all.values()) {
+        playerManager.all.forEach((player) => {
+            player.lastActivity = new Date();
+        });
+    }
+    setAfkTracking(value: boolean) {
+        this.isTrackingAfks = value;
+        if (value) {
+            room.onPlayerActivity = (vanillaPlayer: VanillaPlayer) => {
+                const player = playerManager.all.get(vanillaPlayer.id);
+                if (!player) { return }
+                player.lastActivity = new Date();
+            }
+            this.resetAfkChecks();
+            this.resumeAfkChecks();
+        } else {
+            room.onPlayerActivity = null;
+            this.resetAfkChecks();
+            this.pauseAfkChecks();
+        }
+    }
+    pauseAfkChecks() {
+        if (this.timers.afkCheckInterval) clearInterval(this.timers.afkCheckInterval);
+    }
+    resumeAfkChecks() {
+        if (this.timers.afkCheckInterval) clearInterval(this.timers.afkCheckInterval);
+        this.timers.afkCheckInterval = setInterval(this.checkAfks, 5000);
     }
 }
 // roomName: string = "Haxball Room", maxPlayers: number = 12, isPublic: boolean = false

@@ -21,9 +21,9 @@ room.onGamePause = (byPlayer: VanillaPlayer) => {
         gameManager.timers.unpauseTimer = setTimeout(() => { gameManager.pauseTheGame(false); }, 30000);
     }
     gameManager.isGamePaused = true;
-    // if (gameManager.isTrackingAFKs) {
-    //     clearInterval(gameManager.timers.AfkTrackingInterval);
-    // }
+    if (gameManager.isTrackingAfks) {
+        gameManager.pauseAfkChecks();
+    }
 };
 
 room.onGameUnpause = (byPlayer: VanillaPlayer) => {
@@ -34,10 +34,10 @@ room.onGameUnpause = (byPlayer: VanillaPlayer) => {
         if (gameManager.timers.unpauseTimer) clearTimeout(gameManager.timers.unpauseTimer);
         gameManager.timers.unpauseTimer = null;
     }
-    // if (gameManager.isTrackingAFKs) {
-    //     util.resetAFKChecks();
-    //     gameManager.timers.afkTrackingInterval = setInterval(util.checkAFKs, 5000);
-    // }
+    if (gameManager.isTrackingAfks) {
+        gameManager.resetAfkChecks();
+        gameManager.resumeAfkChecks();
+    }
 };
 
 room.onTeamGoal = async (teamId: 1 | 2) => {
@@ -59,7 +59,7 @@ room.onPlayerTeamChange = async (player_vanilla: VanillaPlayer, byPlayer_vanilla
         //should not happen
         return;
     }
-    byPlayer.lastActivity = new Date(); // just to make sure admins are not AFK'd often
+    byPlayer.lastActivity = new Date(); // just to make sure admins are not AFK'd while they are adjusting teams
     if (gameManager.timers.balanceTimer) {
         clearTimeout(gameManager.timers.balanceTimer);
         gameManager.timers.balanceTimer = null;
@@ -100,10 +100,10 @@ room.onGameStart = async (byPlayer: VanillaPlayer) => {
         }
     }
 
-    // if (gameManager.isTrackingAFKs) {
-    //     util.resetAFKChecks();
-    //     gameManager.timers.afkTrackingInterval = setInterval(util.checkAFKs, 5000);
-    // }
+    if (gameManager.isTrackingAfks) {
+        gameManager.resetAfkChecks();
+        gameManager.resumeAfkChecks();
+    }
 };
 
 room.onGameStop = async (byPlayer: VanillaPlayer) => {
@@ -121,9 +121,9 @@ room.onGameStop = async (byPlayer: VanillaPlayer) => {
         gameManager.lastTeamThatPicked = 2;
     }
     await balancing.balanceTeamsWithTimeout(2000);
-    // if (gameManager.isTrackingAFKs) {
-    //     clearInterval(gameManager.timers.AfkTrackingInterval);
-    // }
+    if (gameManager.isTrackingAfks) {
+        gameManager.pauseAfkChecks();
+    }
     //await playerStorage.batchUpdatePlayers();
 };
 room.onTeamVictory = async (_scores: { red: number, blue: number }) => {
@@ -131,9 +131,9 @@ room.onTeamVictory = async (_scores: { red: number, blue: number }) => {
     room.stopGame();
     if (gameManager.timers.startTimer) clearTimeout(gameManager.timers.startTimer);
     gameManager.timers.startTimer = null;
-    // if (gameManager.isTrackingAFKs) {
-    // 	clearInterval(gameManager.timers.AfkTrackingInterval);
-    // }
+    if (gameManager.isTrackingAfks) {
+        gameManager.pauseAfkChecks();
+    }
     await balancing.endGame(_scores);
     if (!gameManager.captainMode) {
         const nSeconds = (gameManager.mixMode === "None") ? 60 : 5;
@@ -240,7 +240,7 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
 
     fetch(process.env.DISCORD_CHATLOGS_URL, {
         method: "POST",
-        body: JSON.stringify({ content: `**${player.name}:** ${message.replaceAll("@", "[@]")}` }),
+        body: JSON.stringify({ content: `${player.name}: ${message.replaceAll("@", "[@]")}` }),
         headers: { "Content-Type": "application/json" },
     })
         .then((res) => {
@@ -256,6 +256,7 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
 room.onRoomLink = async (url: string) => {
     try {
         console.log("onRoomLink: " + url);
+        gameManager.setAfkTracking(gameManager.isTrackingAfks);
         //console.log("room at export time:", typeof room, room);
         //console.log("util at export time:", typeof util, util);
         if (process.env.HAXBALL_PLATFORM === "node") {

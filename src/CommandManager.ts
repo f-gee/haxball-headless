@@ -801,7 +801,7 @@ commandManager.registerCommand({
 	}
 });
 commandManager.registerCommand({
-	name: "get", category: "utility", helpStrings: [".get [varName]: shows the value of a parameter", "possible values: captainmode, autobalance, forceequalteams, password, captcha, teams, autopassword"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
+	name: "get", category: "utility", helpStrings: [".get [varName]: shows the value of a parameter", "possible values: captainmode, autobalance, forceequalteams, password, captcha, teams, autopassword, afkdetector"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		let targetVariable: any;
 		let varName = args[0];
@@ -850,6 +850,9 @@ commandManager.registerCommand({
 				return { ok: true, info: `Teams mode: ${gameManager.teamCaps.red}v${gameManager.teamCaps.blue}` };
 			case "autopassword":
 				targetVariable = gameManager.autoPasswordCapacity;
+				break;
+			case "afkdetector":
+				targetVariable = gameManager.isTrackingAfks;
 				break;
 			default:
 				return { ok: false, error: "Invalid variable name" };
@@ -911,6 +914,11 @@ commandManager.registerCommand({
 					return { ok: false, error: "Invalid number" };
 				}
 				outputValue = gameManager.autoPasswordCapacity = maxPlayers;
+				break;
+			case "afkdetector":
+				outputValue = util.parseTrue(newValue);
+				util.messageAdmins(`ℹ️ ${player.name} ${outputValue ? "enabled" : "disabled"} AFK tracking`);
+				gameManager.setAfkTracking(outputValue)
 				break;
 			default:
 				return { ok: false, error: "Invalid variable name" };
