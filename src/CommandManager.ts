@@ -305,6 +305,9 @@ commandManager.registerCommand({
 			case "captcha":
 				targetVariable = gameManager.captcha;
 				break;
+			case "blocknewtab":
+				targetVariable = gameManager.blockNewTab;
+				break;
 			case "team":
 				switch (args[1]) {
 					case "red":
@@ -372,6 +375,9 @@ commandManager.registerCommand({
 				outputValue = gameManager.captcha = util.parseBoolean(newValue, false);
 				room.setRequireRecaptcha(outputValue)
 				break;
+			case "blocknewtab":
+				outputValue = gameManager.blockNewTab = util.parseBoolean(newValue, false);
+				break;
 			case "teams":
 			case "teamcaps":
 				const inputArray = args[1].split("v").map((v) => parseInt(v));
@@ -432,6 +438,7 @@ commandManager.registerCommand({
 					return { ok: false, error: "No super admins found" };
 				}
 				return { ok: true, info: `Super admins: ${superadmins.join(", ")}` };
+			case "devs":
 			case "developers":
 				if (!player.isSuperAdmin) { return { ok: false, error: "You are not super admin" }; }
 				const developers = Array.from(playerManager.developers).map(p => p.name);
@@ -542,7 +549,7 @@ commandManager.registerCommand({
 		if (target.id === player.id) return { ok: false, error: "You cannot kick yourself" };
 		if (target.isSuperAdmin && !player.isSuperAdmin) return { ok: false, error: `You are not allowed to kick ${target.name}` };
 		let reason = args.slice(1).join(" ");
-		if (!reason) { reason = `(${player.name})` };
+		if (!reason) { reason = `${player.name}` };
 		room.kickPlayer(target.id, reason, false);
 		util.messageAdmins(`${player.name} kicked ${target.name}. Reason: ${reason}`);
 		return { ok: true };
@@ -556,7 +563,7 @@ commandManager.registerCommand({
 		if (target.id === player.id) return { ok: false, error: "You cannot ban yourself" };
 		if (target.isSuperAdmin && !player.isSuperAdmin) return { ok: false, error: `You are not allowed to ban ${target.name}` };
 		let reason = args.slice(1).join(" ");
-		if (!reason) { reason = `(${player.name})` };
+		if (!reason) { reason = `${player.name}` };
 		room.kickPlayer(target.id, reason, true);
 		util.messageAdmins(`${player.name} banned ${target.name}. Reason: ${reason}`);
 		return { ok: true };

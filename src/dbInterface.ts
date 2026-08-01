@@ -44,12 +44,13 @@ export const dbInterface = {
         }
     },
 
-    async updatePlayer(auth: string, playerData: Partial<StoredPlayer>): Promise<UpdatePlayerResult> {
+    async updatePlayer(auth: string, player: Partial<StoredPlayer>): Promise<UpdatePlayerResult> {
         if (!process.env.DB_API_URL) {
             return { ok: false, error: 'no DB API URL' };
         }
 
         try {
+            const playerData = { name: player.name, elo: player.elo, lastActivity: player.lastActivity, totalGames: player.totalGames, totalWins: player.totalWins };
             const res = await fetch(`${process.env.DB_API_URL}/updatePlayer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -60,8 +61,8 @@ export const dbInterface = {
                 return { ok: false, error: `updatePlayer failed: ${res.status} ${res.statusText}` };
             }
 
-            const player: StoredPlayer = await res.json();
-            return { ok: true, player };
+            const updatedPlayer: StoredPlayer = await res.json();
+            return { ok: true, player: updatedPlayer };
         } catch (err) {
             return { ok: false, error: `updatePlayer request error: ${(err as Error).message}` };
         }

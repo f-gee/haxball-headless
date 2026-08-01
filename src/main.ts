@@ -238,20 +238,18 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
         }
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
     fetch(process.env.DISCORD_CHATLOGS_URL, {
         method: "POST",
-        signal: controller.signal,
-        body: JSON.stringify({ "content": `**${player.name}:** ${message.replaceAll("@", "[@]")}` }),
-        headers: { "Content-Type": "application/json", },
+        body: JSON.stringify({ content: `**${player.name}:** ${message.replaceAll("@", "[@]")}` }),
+        headers: { "Content-Type": "application/json" },
     })
+        .then((res) => {
+            if (!res.ok) {
+                util.debugLog(`Discord chatlog failed: HTTP ${res.status} ${res.statusText}`);
+            }
+        })
         .catch((err) => {
             util.debugLog("Discord chatlog failed: " + (err as Error).message);
-        })
-        .finally(() => {
-            clearTimeout(timeout);
         });
 };// onPlayerChat
 

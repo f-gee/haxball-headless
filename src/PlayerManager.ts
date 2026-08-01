@@ -170,7 +170,7 @@ class PlayerManager {
         if (process.env.DB_API_URL) {
             //dbInterface.queueUpdate(player);
             // do not queue, update instantly
-            dbInterface.updatePlayer(player.auth, { elo: player.elo }).catch(err => {
+            dbInterface.updatePlayer(player.auth, player).catch(err => {
                 console.error('updatePlayer failed:', err);
             });
         }
@@ -219,7 +219,7 @@ class PlayerManager {
                 _p.elo += winnerGainElo;
                 util.pm(_p, `${player.name} devam eden maçtan ayrıldığı için ${winnerGainElo} Elo puanı kazandınız. Yeni puanınız: ${_p.elo}`, "info");
                 if (process.env.DB_API_URL) {
-                    dbInterface.updatePlayer(player.auth, { elo: player.elo }).catch(err => {
+                    dbInterface.updatePlayer(player.auth, player).catch(err => {
                         console.error('updatePlayer failed:', err);
                     });
                 }

@@ -200,6 +200,7 @@ export const util = {
     setAutoCapacityPassword() {
         if (gameManager.autoPasswordCapacity > 0) {
             const numPlayers = playerManager.all.size - playerManager.afks.size;
+            //util.debugLog(`!!roomPassword? ${!!gameManager.roomPassword} numPlayers? ${numPlayers} autoPasswordCapacity = ${gameManager.autoPasswordCapacity}`);
             if (!gameManager.roomPassword && numPlayers >= gameManager.autoPasswordCapacity) {
                 const randomPassword = Math.random().toString(36).substring(2);
                 util.setRoomPassword(randomPassword);
