@@ -3,7 +3,6 @@ import { commandManager } from './CommandManager';
 import { VanillaPlayer, Player, playerManager } from './PlayerManager';
 import { balancing } from "./balancing";
 import { util } from "./util";
-import { ENV } from "./env_handler";
 
 room.setDefaultStadium("Hockey");
 room.startGame();
@@ -242,7 +241,7 @@ room.onPlayerChat = (vanillaPlayer: VanillaPlayer, message: string) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 
-    fetch(ENV.DISCORD_CHATLOGS_URL, {
+    fetch(process.env.DISCORD_CHATLOGS_URL, {
         method: "POST",
         signal: controller.signal,
         body: JSON.stringify({ "content": `**${player.name}:** ${message.replaceAll("@", "[@]")}` }),
@@ -264,7 +263,7 @@ room.onRoomLink = async (url: string) => {
         if (process.env.HAXBALL_PLATFORM === "node") {
             hjsCallback({ room, util, gameManager, playerManager, commandManager, url });
         }
-        await fetch(ENV.DISCORD_ROOMSTATUS_URL, {
+        await fetch(process.env.DISCORD_ROOMSTATUS_URL, {
             method: "PATCH",
             body: JSON.stringify({
                 "embeds": [
@@ -273,8 +272,8 @@ room.onRoomLink = async (url: string) => {
                         "description": "haxball room is up",
                         "color": 0x92FF0E,
                         "footer": {
-                            "text": `bot v${__BOT_VERSION__} / ${gameManager.roomParams.public ? 'public' : 'private'} / ${gameManager.roomParams.maxPlayers}p`,
-                            "icon_url": ENV.DISCORD_ICON_URL,
+                            "text": `bot v${process.env.BOT_VERSION} / ${gameManager.roomParams.public ? 'public' : 'private'} / ${gameManager.roomParams.maxPlayers}p`,
+                            "icon_url": process.env.DISCORD_ICON_URL,
                         },
                         "url": url,
                         "timestamp": new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString().replace("Z", "+03:00")
@@ -294,4 +293,24 @@ room.onRoomLink = async (url: string) => {
 };
 
 //export gameManager;
-export { room, gameManager, commandManager, playerManager, util, balancing };
+//export { room, gameManager, commandManager, playerManager, util, balancing };
+
+declare global {
+    interface Window {
+        room: typeof room;
+        gameManager: typeof gameManager;
+        commandManager: typeof commandManager;
+        playerManager: typeof playerManager;
+        util: typeof util;
+        balancing: typeof balancing;
+    }
+}
+
+if (typeof window !== "undefined") {
+    window.room = room;
+    window.gameManager = gameManager;
+    window.commandManager = commandManager;
+    window.playerManager = playerManager;
+    window.util = util;
+    window.balancing = balancing;
+}

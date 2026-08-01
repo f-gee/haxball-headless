@@ -1,7 +1,7 @@
 import { Player, VanillaPlayer, playerManager } from './PlayerManager';
 import { util } from './util';
 import { room, gameManager } from './GameManager';
-import { dbInterface } from './databaseInterface';
+import { dbInterface } from './dbInterface';
 import { Config } from './config';
 
 // exporting like this allows functions to be hot-plugged on the run

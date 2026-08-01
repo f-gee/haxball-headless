@@ -92,7 +92,8 @@ app.get('/', (req, res) => {
 });
 
 app.post('/host', async (req, res) => {
-    const { mode, token } = req.body;
+    const { mode, token, environment } = req.body;
+    const envFileName = environment === "development" ? "dev" : "prod";
 
     if (!token || !mode) {
         return res.status(400).send('Missing mode or token');
@@ -101,15 +102,10 @@ app.post('/host', async (req, res) => {
     try {
         const parsedToken = parseHaxballToken(token);
         if (mode === 'puppeteer') {
-            const result = await puppeteerManager.createRoom(parsedToken);
+            const result = await puppeteerManager.createRoom(parsedToken, envFileName);
             state.page = result.page;
-            //state.room = result.room;
-            // console.log("room: ");
-            // console.log(state.room);
-            // console.log("page2: ");
-            // console.log(state.page);
         } else if (mode === 'haxballjs') {
-            const result = await haxballJsManager.createRoom(parsedToken);
+            const result = await haxballJsManager.createRoom(parsedToken, envFileName);
             state.room = result.room;
             state.url = result.url;
         } else {

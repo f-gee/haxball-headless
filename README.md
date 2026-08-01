@@ -34,3 +34,4 @@ npm install
 - Add option to host development builds
 - test nonexistent required .env keys
 - afk detector
+- esbuild minifySyntax: true for dead code elimination

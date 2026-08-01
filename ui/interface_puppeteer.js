@@ -47,10 +47,10 @@ const getOrLaunchBrowser = async () => {
     }
 }
 
-async function createRoom(token) {
+async function createRoom(token, environment) {
     try {
-        //const bundlePath = path.join(__dirname, '..', 'dist', 'bundle.puppeteer_dev.js');
-        const bundlePath = path.join(__dirname, '..', 'dist', 'bundle.puppeteer_prod.js');
+        const bundlePath = path.join(__dirname, '..', 'dist', `bot.puppeteer.${environment}.js`);
+        console.log(`puppeteer.createRoom, filePath: ${bundlePath}`);
         const botCode = fs.readFileSync(bundlePath, 'utf8');
         const browser = await getOrLaunchBrowser();
         page = await browser.newPage();
@@ -72,10 +72,6 @@ async function createRoom(token) {
         const room = await page.evaluate(() => {
             return window.room;
         });
-        // console.log("room1: ");
-        // console.log(room);
-        console.log("page1: ");
-        console.log(page);
         const roomExists = await page.evaluate(() => typeof window.room !== "undefined");
         console.log("room created:", roomExists);
         //const available = await getAvailableGlobals(page, ['room', 'gameManager', 'scoreboard']);

@@ -14,6 +14,18 @@ html
         input(type="radio" name="mode" value="haxballjs")
         |  haxball.js
 
+      fieldset.env-switch
+        legend Environment
+        label
+          input(type="radio" name="environment" value="development" checked)
+          |  Development
+        p.env-hint Less efficient, but lets you hot-swap functions on the fly while the room is running.
+
+        label
+          input(type="radio" name="environment" value="production")
+          |  Production
+        p.env-hint More efficient, but code is locked in — no live edits once hosted.
+
       input#tokenInput(type="text" name="token" placeholder="Room token" required)
       a(href="https://www.haxball.com/headlesstoken" target="_blank" rel="noopener") Get token
       button(type="submit") Host

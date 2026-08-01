@@ -6,10 +6,11 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 
 let hjsContext;
 
-function createRoom(token) {
+function createRoom(token, environment) {
     return new Promise((resolve, reject) => {
-        const bundlePath = path.join(__dirname, '..', 'dist', 'bundle.node_prod.js');
-        delete require.cache[require.resolve(bundlePath)]; // trying to fix empty botExports
+        const bundlePath = path.join(__dirname, '..', 'dist', `bot.node.${environment}.js`);
+        console.log(`haxballjs.createRoom, filePath: ${bundlePath}`);
+        //delete require.cache[require.resolve(bundlePath)]; // trying to fix empty botExports
         HaxballJS().then((HBInit) => {
             try {
                 require(bundlePath)(HBInit, token, (botExports) => {

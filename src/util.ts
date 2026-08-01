@@ -1,7 +1,7 @@
 import { Config } from "./config";
-import { gameManager, room } from "./main";
+import { gameManager, room } from "./GameManager";
 import { Player, playerManager, VanillaPlayer } from "./PlayerManager";
-import { ENV } from "./env_handler";
+
 export const util = {
     sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -186,7 +186,7 @@ export const util = {
                 });
             }
             util.messageAdmins(`ℹ️ New room password: ${password}`);
-            fetch(ENV.DISCORD_ROOMPASSWORD_URL, {
+            fetch(process.env.DISCORD_ROOMPASSWORD_URL, {
                 method: "PATCH",
                 body: JSON.stringify({ "content": `**Oda şifresi:** ${password}\n*${formatIstanbulDate()}*` }),
                 headers: { "Content-Type": "application/json", },
@@ -236,8 +236,8 @@ export const util = {
             .catch((e) => { console.log(`error while fetching ${keyQuery}: ${e}`) });
     },
     async geminiAnalyzeChat(messages: string[]) {
-        if (!ENV.GEMINI_API_KEY) { return }
-        const API_KEY = ENV.GEMINI_API_KEY;
+        if (!process.env.GEMINI_API_KEY) { return }
+        const API_KEY = process.env.GEMINI_API_KEY;
         const MODEL = "gemini-2.5-flash";
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
         const payload = {

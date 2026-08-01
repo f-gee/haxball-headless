@@ -1,7 +1,7 @@
 import { util } from "./util";
 import { gameManager, room } from "./GameManager";
-import { dbInterface } from "./databaseInterface";
-import { ENV } from "./env_handler";
+import { dbInterface } from "./dbInterface";
+
 export interface Player {
     id: number;
     name: string;
@@ -133,7 +133,7 @@ class PlayerManager {
         // if (player.isAdmin) this.admins.add(player);
         // if (player.isSuperAdmin) this.superAdmins.add(player);
         // if (player.isDeveloper) this.developers.add(player);
-        if (ENV.DB_API_URL) {
+        if (process.env.DB_API_URL) {
             dbInterface.getPlayer(player.auth).then(result => {
                 if (!result.ok) {
                     //console.warn(result.error);
@@ -167,7 +167,7 @@ class PlayerManager {
             }
         }
 
-        if (ENV.DB_API_URL) {
+        if (process.env.DB_API_URL) {
             //dbInterface.queueUpdate(player);
             // do not queue, update instantly
             dbInterface.updatePlayer(player.auth, { elo: player.elo }).catch(err => {
@@ -218,7 +218,7 @@ class PlayerManager {
             for (const _p of playerManager[player.team === 1 ? "blue" : "red"]) {
                 _p.elo += winnerGainElo;
                 util.pm(_p, `${player.name} devam eden maçtan ayrıldığı için ${winnerGainElo} Elo puanı kazandınız. Yeni puanınız: ${_p.elo}`, "info");
-                if (ENV.DB_API_URL) {
+                if (process.env.DB_API_URL) {
                     dbInterface.updatePlayer(player.auth, { elo: player.elo }).catch(err => {
                         console.error('updatePlayer failed:', err);
                     });

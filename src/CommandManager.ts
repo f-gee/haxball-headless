@@ -1,9 +1,7 @@
 import { gameManager, room } from "./GameManager";
 import { util } from "./util";
 import { playerManager, Player, VanillaPlayer } from "./PlayerManager";
-//import * as balancing from './balancing'
 import { balancing } from "./balancing";
-import { ENV } from "./env_handler";
 import { Config } from "./config";
 
 export interface Command {
@@ -180,8 +178,7 @@ commandManager.registerCommand({
 commandManager.registerCommand({
 	name: "version", category: "utility", helpStrings: ["Display bot version"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
 	execute: (player, args) => {
-		//util.pm(player, `Version: ${__BOT_VERSION__}`);
-		return { ok: true, info: `Version: ${__BOT_VERSION__}` };
+		return { ok: true, info: `Version: ${process.env.BOT_VERSION}` };
 	}
 });
 commandManager.registerCommand({
@@ -191,21 +188,21 @@ commandManager.registerCommand({
 		return { ok: true };
 	}
 });
-if (ENV.DISCORD_INVITE_URL) {
+if (process.env.DISCORD_INVITE_URL) {
 	commandManager.registerCommand({
 		name: "discord", category: "utility", helpStrings: ["shows discord invite link"], minArguments: 0, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
 		execute: (player, args) => {
-			util.say(`🎮 Discord adresimiz: ${ENV.DISCORD_INVITE_URL}`);
+			util.say(`🎮 Discord adresimiz: ${process.env.DISCORD_INVITE_URL}`);
 			return { ok: true };
 		}
 	});
 }
-if (ENV.GEMINI_API_KEY) {
+if (process.env.GEMINI_API_KEY) {
 	commandManager.registerCommand({
 		name: "gemini", category: "chat", helpStrings: [".gemini [prompt]"], minArguments: 1, cooldownSeconds: 3, needsAdmin: true, needsSuperAdmin: true,
 		execute: async (player, args) => {
 			let q = args.join(" ");
-			const API_KEY = ENV.GEMINI_API_KEY;
+			const API_KEY = process.env.GEMINI_API_KEY;
 			const MODEL = "gemini-2.5-flash";
 			const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 			const payload = {
