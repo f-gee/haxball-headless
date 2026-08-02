@@ -3,6 +3,7 @@ import { util } from "./util";
 import { playerManager, Player, VanillaPlayer } from "./PlayerManager";
 import { balancing } from "./balancing";
 import { Config } from "./config";
+import { dbInterface } from "./dbInterface";
 
 export interface Command {
 	name: string;
@@ -962,5 +963,23 @@ commandManager.registerCommand({
 			default:
 				return { ok: false, error: "Invalid argument. Use admins, superadmins, developers or afks" };
 		}
+	}
+});
+commandManager.registerCommand({
+	name: "top", category: "utility", helpStrings: [".top elo: shows the top 6 players by elo", ".top winrate: shows the top 6 players by win rate"], minArguments: 1, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
+	execute: async (player, args) => {
+		const by = args[0] === 'winrate' ? 'winrate' : 'elo';
+		const n = Math.min(parseInt(args[1]) || 5, 20);
+		const result = await dbInterface.getTopPlayers(by, n);
+		if (!result.ok) return { ok: false, error: `Error: ${result.error}` };
+
+		util.say(`Top ${result.players.length} players by ${by}`);
+		result.players.forEach((p, i) => {
+			const stat = by === 'winrate'
+				? `${((p.winRate ?? 0) * 100).toFixed(1)}% (${p.totalWins}/${p.totalGames})`
+				: `${p.elo} elo`;
+			util.say(`${i + 1}. ${p.name} — ${stat}`);
+		});
+		return { ok: true }
 	}
 });

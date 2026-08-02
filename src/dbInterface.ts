@@ -9,7 +9,13 @@ type UpdatePlayerResult =
     | { ok: false; error: string };
 
 type BatchUpdatePlayersResult =
-    | { ok: true; updatedCount: number; players: StoredPlayer[] }
+    | { ok: true; updatedCount: number; players: StoredPlayer[]; skipped?: { playerData: Partial<StoredPlayer>; reason: string }[] }
+    | { ok: false; error: string };
+
+type TopPlayersBy = 'elo' | 'winrate';
+
+type TopPlayersResult =
+    | { ok: true; players: (StoredPlayer & { winRate?: number })[] }
     | { ok: false; error: string };
 
 type PlayerUpdate = Pick<StoredPlayer, 'name' | 'auth' | 'elo' | 'totalGames' | 'totalWins' | 'lastActivity'>;
@@ -58,7 +64,8 @@ export const dbInterface = {
             });
 
             if (!res.ok) {
-                return { ok: false, error: `updatePlayer failed: ${res.status} ${res.statusText}` };
+                const body = await res.json().catch(() => null);
+                return { ok: false, error: `updatePlayer failed: ${res.status} ${res.statusText}${body?.error ? ` — ${body.error}` : ''}` };
             }
 
             const updatedPlayer: StoredPlayer = await res.json();
@@ -84,10 +91,36 @@ export const dbInterface = {
                 return { ok: false, error: `batchUpdatePlayers failed: ${res.status} ${res.statusText}` };
             }
 
-            const data: { updatedCount: number; players: StoredPlayer[] } = await res.json();
-            return { ok: true, updatedCount: data.updatedCount, players: data.players };
+            const data: { updatedCount: number; players: StoredPlayer[]; skipped?: { playerData: Partial<StoredPlayer>; reason: string }[] } = await res.json();
+            return { ok: true, updatedCount: data.updatedCount, players: data.players, skipped: data.skipped };
         } catch (err) {
             return { ok: false, error: `batchUpdatePlayers request error: ${(err as Error).message}` };
+        }
+    },
+
+    // by='elo'     -> top N players sorted by elo descending
+    // by='winrate' -> top N players sorted by totalWins/totalGames descending,
+    //                 restricted to players with at least `minGames` games so a
+    //                 1-win-1-game player can't top the board
+    async getTopPlayers(by: TopPlayersBy = 'elo', limit = 10, minGames = 10): Promise<TopPlayersResult> {
+        if (!process.env.DB_API_URL) {
+            return { ok: false, error: 'no DB API URL' };
+        }
+
+        try {
+            const params = new URLSearchParams({ by, limit: String(limit) });
+            if (by === 'winrate') params.set('minGames', String(minGames));
+
+            const res = await fetch(`${process.env.DB_API_URL}/topPlayers?${params.toString()}`);
+
+            if (!res.ok) {
+                return { ok: false, error: `getTopPlayers failed: ${res.status} ${res.statusText}` };
+            }
+
+            const players: (StoredPlayer & { winRate?: number })[] = await res.json();
+            return { ok: true, players };
+        } catch (err) {
+            return { ok: false, error: `getTopPlayers request error: ${(err as Error).message}` };
         }
     },
 
@@ -110,35 +143,30 @@ export const dbInterface = {
         } else {
             queuedUpdates.set(player.auth, update);
         }
-        // console.log(`[DB] Queued update for player: ${player.name}, ${player.auth}`);
-        // console.log(JSON.stringify([...queuedUpdates]));
     },
 
     flushQueue() {
-        const updatesToSend: Partial<StoredPlayer>[] = [];
-
-        // Collect all queued updates
-        for (const playerData of queuedUpdates.values()) {
-            updatesToSend.push(playerData);
-        }
+        const updatesToSend: Partial<StoredPlayer>[] = [...queuedUpdates.values()];
 
         // Clear queue immediately to prevent race conditions
         queuedUpdates.clear();
 
-        // Send all updates in one batch request
         this.batchUpdatePlayers(updatesToSend)
-            .then(() => {
-                console.log(`[DB] Flushed ${updatesToSend.length} queued updates successfully`);
+            .then((result) => {
+                if (!result.ok) {
+                    console.error(`[DB] Failed to flush ${updatesToSend.length} queued updates: ${result.error}`);
+                    return;
+                }
+                if (result.skipped?.length) {
+                    console.warn(`[DB] Flushed ${result.updatedCount}/${updatesToSend.length} queued updates — ${result.skipped.length} skipped:`, result.skipped);
+                    return;
+                }
+                console.log(`[DB] Flushed ${result.updatedCount} queued updates successfully`);
             })
             .catch((error) => {
-                console.error(`[DB] Failed to flush queued updates:`, error);
-
-                // // Put updates back in queue if batch update failed
-                // updatesToSend.forEach(playerData => {
-                //     if (playerData.auth) {
-                //         this.queueUpdate(playerData as StoredPlayer);
-                //     }
-                // });
+                // Should be unreachable since batchUpdatePlayers catches internally,
+                // but kept as a safety net.
+                console.error(`[DB] Unexpected error flushing queued updates:`, error);
             });
     },
 };
