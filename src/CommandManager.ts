@@ -973,17 +973,30 @@ commandManager.registerCommand({
 	name: "top", category: "utility", helpStrings: [".top elo: shows the top 6 players by elo", ".top winrate: shows the top 6 players by win rate"], minArguments: 1, cooldownSeconds: 5, needsAdmin: false, needsSuperAdmin: false,
 	execute: async (player, args) => {
 		const by = args[0] === 'winrate' ? 'winrate' : 'elo';
-		const n = Math.min(parseInt(args[1]) || 5, 20);
-		const result = await dbInterface.getTopPlayers(by, n);
+		const result = await dbInterface.getTopPlayers(by, 6);
 		if (!result.ok) return { ok: false, error: `Error: ${result.error}` };
 
-		util.say(`Top ${result.players.length} players by ${by}`);
-		result.players.forEach((p, i) => {
-			const stat = by === 'winrate'
-				? `${((p.winRate ?? 0) * 100).toFixed(1)}% (${p.totalWins}/${p.totalGames})`
-				: `${p.elo} elo`;
-			util.say(`${i + 1}. ${p.name} — ${stat}`);
-		});
-		return { ok: true }
+		const _topPlayers = result.players;
+		const stat = (p: any) => by === 'winrate'
+			? `${((p.winRate ?? 0) * 100).toFixed(1)}%`
+			: p.elo;
+
+		util.say(`Lider tablosu: (${by === 'winrate' ? 'Winrate' : 'Elo'})`);
+		if (_topPlayers.length < 6) {
+			let i = 1;
+			for (const _p of _topPlayers) {
+				util.say(`${i}. (${stat(_p)}) ${_p.name}`);
+				i++;
+			}
+		} else {
+			util.say(`🥇 (${stat(_topPlayers[0])}) ${_topPlayers[0].name}`);
+			util.say(`🥈 (${stat(_topPlayers[1])}) ${_topPlayers[1].name} 🥉 (${stat(_topPlayers[2])}) ${_topPlayers[2].name}`);
+			let lastThree = "";
+			for (let i = 3; i < 6; i++) {
+				lastThree += `🏅 (${stat(_topPlayers[i])}) ${_topPlayers[i].name} `;
+			}
+			util.say(lastThree);
+		}
+		return { ok: true };
 	}
 });

@@ -31,7 +31,5 @@ npm install
   - An example database backend is provided in `/db_api` folder. If you want an actual database, you need to implement it elsewhere and provide DB_API_URL in .env
 
 ## TODO
-- Add option to host development builds
-- test nonexistent required .env keys
-- afk detector
-- esbuild minifySyntax: true for dead code elimination
+- "top" formatting
+- "afk" should induce cooldown for "back"
