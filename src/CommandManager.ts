@@ -791,11 +791,15 @@ commandManager.registerCommand({
 		try {
 			const ctx = Object.assign(
 				Object.create(globalThis), // fall through to all real globals
-				{ player, args, room, util, commandManager } // fill in module-scoped stuff too
+				{ player, args, room, util, gameManager, commandManager, playerManager, balancing, dbInterface } // fill in module-scoped stuff too
 			);
 			const result = fEval(codeToRun, ctx);
 			//return { ok: true, success: result ? util.variableToString(result) : null };
-			return { ok: true, success: util.variableToString(result) };
+			if (result !== null && result !== undefined) {
+				return { ok: true, success: util.variableToString(result) };
+			} else {
+				return { ok: true };
+			}
 		} catch (e) {
 			return { ok: false, error: util.variableToString(e) };
 		}

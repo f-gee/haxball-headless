@@ -191,6 +191,7 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
     }
     util.setAutoCapacityPassword();
     playerManager.restoreRecentPlayer(player);
+    await balancing.reorderSpecs(); // so they go above AFKs
     await balancing.balanceTeamsWithTimeout(1000);
 };
 room.onPlayerLeave = async (vanillaPlayer: VanillaPlayer) => {
