@@ -260,6 +260,7 @@ room.onRoomLink = async (url: string) => {
     try {
         console.log("onRoomLink: " + url);
         gameManager.setAfkTracking(gameManager.isTrackingAfks);
+        gameManager.toggleAfkDetection(0);
         //console.log("room at export time:", typeof room, room);
         //console.log("util at export time:", typeof util, util);
         if (process.env.HAXBALL_PLATFORM === "node") {
