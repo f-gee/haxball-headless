@@ -281,8 +281,8 @@ class PlayerManager {
             player.chatMutedUntil = findRecentPlayer.chatMutedUntil;
             player.totalGames = findRecentPlayer.totalGames;
             player.totalWins = findRecentPlayer.totalWins;
-            const minutesSinceLastSeen = Math.ceil((Date.now() - findRecentPlayer.lastActivity.getTime()) / 60000);
-            util.messageAdmins(`${player.name} was last seen ${minutesSinceLastSeen} minutes ago`);
+            const timeSinceLastSeen = util.formatDuration(Date.now() - findRecentPlayer.lastActivity.getTime());
+            util.messageAdmins(`${player.name} was last seen ${timeSinceLastSeen} ago`);
             if (findRecentPlayer.name !== player.name) {
                 util.messageAdmins(`${player.name}'s old name was ${findRecentPlayer.name}`);
             }

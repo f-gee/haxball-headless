@@ -32,6 +32,20 @@ export const util = {
         }
         return result;
     },
+    formatDuration(dur: number): string {
+        const seconds = Math.floor(dur / 1000);
+        if (seconds < 60) return `${seconds} seconds`;
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes} minutes`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours} hours`;
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `${days} days`;
+        const weeks = Math.floor(days / 7);
+        if (weeks < 4) return `${weeks} weeks`;
+        const months = Math.floor(days / 30);
+        return `${months} months`;
+    },
     nameToMention(name: string) { return "@" + name.replaceAll(" ", "_"); },
     debugLog(message?: unknown) {
         let text: string;
@@ -188,7 +202,7 @@ export const util = {
             util.messageAdmins(`ℹ️ New room password: ${password}`);
             fetch(process.env.DISCORD_ROOMPASSWORD_URL, {
                 method: "PATCH",
-                body: JSON.stringify({ "content": `**Oda şifresi:** ${password}\n*${formatIstanbulDate()}*` }),
+                body: JSON.stringify({ "content": `**Oda şifresi:** ${password}\n(${formatIstanbulDate()})` }),
                 headers: { "Content-Type": "application/json", },
             }).catch((err) => {
                 util.debugLog("Discord room password update failed: " + (err instanceof Error ? err.message : String(err)));

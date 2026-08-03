@@ -182,12 +182,22 @@ export class GameManager {
     // only detect AFKs if room has enough players for a ranked game:
     toggleAfkDetection(numPlayers: number) {
         if (numPlayers >= gameManager.teamCaps.red + gameManager.teamCaps.blue) {
+            if (this.isAfkDetectorActive) {
+                return
+            } else {
+                util.messageDevelopers("[TMP] Turning on AFK detection");
+            }
             this.isAfkDetectorActive = true;
             if (this.isGameGoingOn && !this.isGamePaused) {
                 this.resetAfkChecks();
                 this.resumeAfkChecks();
             }
         } else {
+            if (!this.isAfkDetectorActive) {
+                return
+            } else {
+                util.messageDevelopers("[TMP] Turning off AFK detection");
+            }
             this.isAfkDetectorActive = false;
             this.pauseAfkChecks();
         }
