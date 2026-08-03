@@ -21,7 +21,7 @@ room.onGamePause = (byPlayer: VanillaPlayer) => {
         gameManager.timers.unpauseTimer = setTimeout(() => { gameManager.pauseTheGame(false); }, 30000);
     }
     gameManager.isGamePaused = true;
-    if (gameManager.isTrackingAfks) {
+    if (gameManager.isAfkDetectorActive) {
         gameManager.pauseAfkChecks();
     }
 };
@@ -34,7 +34,7 @@ room.onGameUnpause = (byPlayer: VanillaPlayer) => {
         if (gameManager.timers.unpauseTimer) clearTimeout(gameManager.timers.unpauseTimer);
         gameManager.timers.unpauseTimer = null;
     }
-    if (gameManager.isTrackingAfks) {
+    if (gameManager.isAfkDetectorActive) {
         gameManager.resetAfkChecks();
         gameManager.resumeAfkChecks();
     }
@@ -100,7 +100,7 @@ room.onGameStart = async (byPlayer: VanillaPlayer) => {
         }
     }
 
-    if (gameManager.isTrackingAfks) {
+    if (gameManager.isAfkDetectorActive) {
         gameManager.resetAfkChecks();
         gameManager.resumeAfkChecks();
     }
@@ -121,7 +121,7 @@ room.onGameStop = async (byPlayer: VanillaPlayer) => {
         gameManager.lastTeamThatPicked = 2;
     }
     await balancing.balanceTeamsWithTimeout(2000);
-    if (gameManager.isTrackingAfks) {
+    if (gameManager.isAfkDetectorActive) {
         gameManager.pauseAfkChecks();
     }
     //await playerStorage.batchUpdatePlayers();
@@ -131,7 +131,7 @@ room.onTeamVictory = async (_scores: { red: number, blue: number }) => {
     room.stopGame();
     if (gameManager.timers.startTimer) clearTimeout(gameManager.timers.startTimer);
     gameManager.timers.startTimer = null;
-    if (gameManager.isTrackingAfks) {
+    if (gameManager.isAfkDetectorActive) {
         gameManager.pauseAfkChecks();
     }
     await balancing.endGame(_scores);
@@ -189,7 +189,9 @@ room.onPlayerJoin = async (vanillaPlayer: VanillaPlayer) => {
         util.pm(player, `${gameManager.welcomeMessage}`, "info");
         util.messageDevelopers(`Sent welcome message: ${gameManager.welcomeMessage}`);
     }
-    util.setAutoCapacityPassword();
+    const numPlayers = playerManager.all.size - playerManager.afks.size;
+    util.setAutoCapacityPassword(numPlayers);
+    gameManager.toggleAfkDetection(numPlayers);
     playerManager.restoreRecentPlayer(player);
     await balancing.reorderSpecs(); // so they go above AFKs
     await balancing.balanceTeamsWithTimeout(1000);
@@ -199,7 +201,7 @@ room.onPlayerLeave = async (vanillaPlayer: VanillaPlayer) => {
     if (!player) return;
     playerManager.saveRecentPlayer(player);
     playerManager.removePlayer(vanillaPlayer.id);
-    util.setAutoCapacityPassword();
+    util.setAutoCapacityPassword(playerManager.all.size - playerManager.afks.size);
     await balancing.balanceTeamsWithTimeout(1000);
 };
 room.onPlayerKicked = (vanillaPlayer: VanillaPlayer, reason: string, ban: boolean, byPlayer?: any) => {

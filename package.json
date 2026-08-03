@@ -1,6 +1,6 @@
 {
     "name": "haxball_headless",
-    "version": "9.2.13",
+    "version": "9.2.14",
     "description": "Haxball headless bot",
     "main": "dist/main.js",
     "scripts": {

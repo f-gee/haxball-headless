@@ -31,5 +31,5 @@ npm install
   - An example database backend is provided in `/db_api` folder. If you want an actual database, you need to implement it elsewhere and provide DB_API_URL in .env
 
 ## TODO
-- "top" formatting
 - "afk" should induce cooldown for "back"
+- AFK detector should only run is population is enough for ranked game

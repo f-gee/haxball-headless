@@ -52,6 +52,7 @@ export class GameManager {
     public chatCache: string[] = [];
     public chatCacheLimit: number = 0;
     public isTrackingAfks: boolean = true;
+    public isAfkDetectorActive: boolean = false;
 
     public timers: {
         afkCheckInterval: ReturnType<typeof setInterval> | null;
@@ -177,6 +178,19 @@ export class GameManager {
     resumeAfkChecks() {
         if (this.timers.afkCheckInterval) clearInterval(this.timers.afkCheckInterval);
         this.timers.afkCheckInterval = setInterval(this.checkAfks, 5000);
+    }
+    // only detect AFKs if room has enough players for a ranked game:
+    toggleAfkDetection(numPlayers: number) {
+        if (numPlayers >= gameManager.teamCaps.red + gameManager.teamCaps.blue) {
+            this.isAfkDetectorActive = true;
+            if (this.isGameGoingOn && !this.isGamePaused) {
+                this.resetAfkChecks();
+                this.resumeAfkChecks();
+            }
+        } else {
+            this.isAfkDetectorActive = false;
+            this.pauseAfkChecks();
+        }
     }
 }
 // roomName: string = "Haxball Room", maxPlayers: number = 12, isPublic: boolean = false
